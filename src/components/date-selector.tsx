@@ -1,12 +1,23 @@
 "use client"
 
 import { getCurrentDate, getDaysInMonth, getFirstDayOfMonth, getMonthAbbreviation } from "@/utils/time";
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { IconButton } from "./icon-botton";
 
+
+type CalenderDate = {
+  year: number,
+  month: number,
+  day: number
+}
 
 type DateSelectorContext = {
-  currentDate: Date
+  selectedDate: CalenderDate
+  displayYear: number
+  displayMonth: number
+
+  onSelectDate: (date: CalenderDate) => void
 }
 
 const context = createContext<DateSelectorContext | null>(null);
@@ -22,22 +33,63 @@ const useDateSelectorContext = () => {
 
 
 export const DateSelector = () => {
-  const defaultDate = getCurrentDate()
+  const defaultSelectedDate = useMemo(() => getCurrentCalenderDate(), [])
+
+  const [selectedDate, setSelectedDate] = useState(defaultSelectedDate)
+  const [displayYear, setDisplayYear] = useState(defaultSelectedDate.year)
+  const [displayMonth, setDisplayMonth] = useState(defaultSelectedDate.month)
+
+  const handleSwitchToNextMonth = () => {
+    const [nextYear, nextMonth] = getNextYearAndMonth(displayYear, displayMonth)
+
+    setDisplayYear(nextYear)
+    setDisplayMonth(nextMonth)
+  }
+
+  const handleSwitchToPreviousMonth = () => {
+    const [previousYear, previousMonth] = getPreviousYearAndMonth(displayYear, displayMonth)
+
+    setDisplayYear(previousYear)
+    setDisplayMonth(previousMonth)
+  }
+
+  const handleBackToToday = () => {
+    const currentDate = getCurrentDate()
+
+    setDisplayYear(currentDate.getFullYear())
+    setDisplayMonth(currentDate.getMonth())
+  }
+
+  const handleSelectDate = (date: CalenderDate) => {
+    const { year, month } = date
+
+    setDisplayYear(year)
+    setDisplayMonth(month)
+
+    setSelectedDate(() => ({ ...date }))
+  }
 
   const value = useMemo<DateSelectorContext>(() => ({
-    currentDate: defaultDate
-  }), [])
+    selectedDate: selectedDate,
+    displayYear: displayYear,
+    displayMonth: displayMonth,
+    onSelectDate: handleSelectDate
+  }), [selectedDate, displayYear, displayMonth])
 
   return (
     <context.Provider value={value}>
       <div className="bg-white shadow-lg rounded-lg p-3  w-xs mx-auto text-stone-900">
-        <MonthNavigator />
+        <MonthNavigator onNextMonth={handleSwitchToNextMonth} onPrevMonth={handleSwitchToPreviousMonth} />
         <WeekdayHeader />
         <Calendar />
+        <div className="flex justify-end mt-4">
+          <BackToTodayBotton onClick={handleBackToToday} />
+        </div>
       </div>
     </context.Provider>
   );
 };
+
 
 type MonthNavigatorProps = {
   monthDisplay?: string;
@@ -46,31 +98,19 @@ type MonthNavigatorProps = {
 };
 
 export const MonthNavigator = (props: MonthNavigatorProps) => {
-  // const { monthDisplay = "2023 - Oct", onPrevMonth, onNextMonth } = props;
-  const { currentDate } = useDateSelectorContext()
+  const { onPrevMonth, onNextMonth } = props;
+  const { displayYear, displayMonth } = useDateSelectorContext()
 
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
+  const monthAbbrev = getMonthAbbreviation(displayMonth)
 
-  const monthAbbrev = getMonthAbbreviation(month)
-
-  const monthDisplay = `${year} - ${monthAbbrev}`
+  const monthDisplay = `${displayYear} - ${monthAbbrev}`
 
   return (
     <div className="flex justify-between items-center mb-4 font-bold">
-      <button
-        // onClick={onPrevMonth}
-        className="  text-gray-500 hover:text-gray-700"
-      >
-        <FaChevronLeft size={12} />
-      </button>
+      <IconButton icon={FaChevronLeft} onClick={onPrevMonth} size={12} aria-label="previous month" />
       <button className="text-sm text-gray-500">{monthDisplay}</button>
-      <button
-        // onClick={onNextMonth}
-        className="text-gray-500 hover:text-gray-700"
-      >
-        <FaChevronRight size={12} />
-      </button>
+      <IconButton icon={FaChevronRight} onClick={onNextMonth} size={12} aria-label="next month" />
+
     </div>
   );
 };
@@ -104,95 +144,116 @@ const WeekdayName = (props: WeekdayNameProps) => {
 };
 
 const Calendar = () => {
-  const { currentDate } = useDateSelectorContext()
-  const offset = getFirstDayByDate(currentDate)
+  const { displayYear, displayMonth } = useDateSelectorContext()
+  const offset = getFirstDayOfMonth(displayYear, displayMonth)
 
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
+  const currentDays = getDaysInMonth(displayYear, displayMonth)
 
-  const currentDays = getDaysInMonthByDate(currentDate)
-  
-  const previousDays = getPreviousMonthDays(currentDate)
   const nextMonthDays = 42 - (currentDays + offset)
 
-  // 生成上個月的日期
-  const previousMonthDates = Array.from({ length: offset }, (_, i) => ({
-    year: month === 0 ? year - 1 : year,
-    month: month === 0 ? 11 : month - 1,
-    day: previousDays - offset + i + 1,
-    isCurrentMonth: false
+  const [previousYaer, previousMonth] = getPreviousYearAndMonth(displayYear, displayMonth)
+  const [nextYear, nextMonth] = getNextYearAndMonth(displayYear, displayMonth)
+
+  const previousDays = getDaysInMonth(previousYaer, previousMonth)
+
+
+  const previousMonthDates: DateButtonProps[] = Array.from({ length: offset }, (_, i) => ({
+    year: previousYaer,
+    month: previousMonth,
+    day: previousDays - offset + i + 1
   }))
 
-  // 生成當前月的日期
-  const currentMonthDates = Array.from({ length: currentDays }, (_, i) => ({
-    year,
-    month,
-    day: i + 1,
-    isCurrentMonth: true
+  const currentMonthDates: DateButtonProps[] = Array.from({ length: currentDays }, (_, i) => ({
+    year: displayYear,
+    month: displayMonth,
+    day: i + 1
   }))
 
-  // 生成下個月的日期
-  const nextMonthDates = Array.from({ length: nextMonthDays }, (_, i) => ({
-    year: month === 11 ? year + 1 : year,
-    month: month === 11 ? 0 : month + 1,
-    day: i + 1,
-    isCurrentMonth: false
+  const remainDates = 42 - offset - currentDays
+  const nextMonthDates: DateButtonProps[] = Array.from({ length: remainDates }, (_, i) => ({
+    year: nextYear,
+    month: nextMonth,
+    day: i + 1
   }))
 
   const dates = [...previousMonthDates, ...currentMonthDates, ...nextMonthDates]
 
+
   return (
-    <div className="grid grid-cols-7 gap-2 text-center">
-      {dates.map((date, index) => (
-        <DateButton
-          key={index}
-          year={date.year}
-          month={date.month}
-          day={date.day}
-          isCurrentMonth={date.isCurrentMonth}
-        />
+    <div className="grid grid-cols-7 gap-2 text-center grid-rows-6">
+      {dates.map((props, index) => (
+        <DateButton key={index} {...props} />
       ))}
     </div>
   )
 }
 
-const getFirstDayByDate = (date: Date) => {
-  const year = date.getFullYear()
-  const month = date.getMonth()
-
-  return getFirstDayOfMonth(year, month)
+const getPreviousYearAndMonth = (year: number, month: number) => {
+  const previousYear = month === 0 ? year - 1 : year
+  const previousMonth = (month + 11) % 12
+  return [previousYear, previousMonth]
 }
 
-const getDaysInMonthByDate = (date: Date) => {
-  const year = date.getFullYear()
-  const month = date.getMonth()
-
-  return getDaysInMonth(year, month)
-}
-
-const getPreviousMonthDays = (date: Date) => {
-  const year = date.getFullYear()
-  const month = date.getMonth()
-
-  const previousYear = month === 1 ? year - 1 : year
-  const previousMonth = (month - 1) % 12
-  return getDaysInMonth(previousYear, previousMonth)
+const getNextYearAndMonth = (year: number, month: number) => {
+  const nextYear = month === 11 ? year + 1 : year
+  const nextMonth = (month + 1) % 12
+  return [nextYear, nextMonth]
 }
 
 
-type DateButtonProps = {
-  year: number
-  month: number
-  day: number
-  isCurrentMonth?: boolean
-}
+type DateButtonProps = CalenderDate
 
 const DateButton = (props: DateButtonProps) => {
-  const { day, isCurrentMonth = true } = props
-  const textColor = isCurrentMonth ? "text-gray-700" : "text-gray-400"
+  const { year, month, day } = props
+  const { displayYear, displayMonth, selectedDate, onSelectDate } = useDateSelectorContext()
+  const currentDate = getCurrentCalenderDate()
+
+
+  const isSelectedDate = year === selectedDate.year && month === selectedDate.month && day === selectedDate.day
+  const isCurrentDate = year === currentDate.year && month === currentDate.month && day === currentDate.day
+  const isDisplayingMonth = year === displayYear && month === displayMonth
+
+  const className = `py-2 rounded-full text-sm hover:bg-blue-100 hover:text-gray-500 transition-all duration-200 relative
+    ${isCurrentDate ? "after:content-['']  after:absolute after:w-3 after:border-b-2 after:border-gray-700 after:bottom-1/2 after:left-1/2  after:-translate-x-1/2 after:translate-y-3" : ""}
+    ${isCurrentDate && isSelectedDate ? "after:border-white" : ""}
+    ${isSelectedDate ? "bg-blue-300 text-white" : isDisplayingMonth ? "text-gray-700" : "text-gray-400"}
+    `
+
+  const handleClick = () => onSelectDate(props)
+
+
   return (
-    <button className={`py-2 rounded-full text-sm hover:bg-blue-100 transition-colors duration-200 ${textColor}`}>
+    <button className={className} onClick={handleClick}>
       {day}
     </button>
   )
+}
+
+type BackToTodayBottonProps = {
+  onClick?: () => void
+}
+
+const BackToTodayBotton = (props: BackToTodayBottonProps) => {
+  const { onClick } = props
+  const { displayYear, displayMonth } = useDateSelectorContext()
+  const today = getCurrentDate()
+
+  const isCurrentMonth = displayYear === today.getFullYear() && displayMonth === today.getMonth()
+  const className = ` px-2  text-xs rounded-sm border-2 border-gray-400 bg-gray-400 text-white hover:text-gray-400 hover:bg-white hover:text-gray-300 transition-all duration-200 shadow-sm
+    ${isCurrentMonth ? "opacity-0" : "opacity-100"}
+  `
+
+  return <button className={className} onClick={onClick}>
+    Today
+  </button>
+}
+
+const getCurrentCalenderDate = (): CalenderDate => {
+  const currentDate = getCurrentDate()
+  return {
+    year: currentDate.getFullYear(),
+    month: currentDate.getMonth(),
+    day: currentDate.getDate()
+  }
+
 }

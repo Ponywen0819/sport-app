@@ -49,15 +49,12 @@ export function getCurrentDateString(): string {
 /**
  * 獲取指定年份與月份的第一天是星期幾
  * @param year 年份
- * @param month 月份 (1-12)
+ * @param month 月份 (0-11)
  * @returns 星期幾 (0-6, 0=星期日, 1=星期一, ..., 6=星期六)
  */
 export function getFirstDayOfMonth(year: number, month: number): number {
-    // 創建指定年份和月份的日期物件
-    // 注意：JavaScript 的月份是從 0 開始的，所以要減 1
     const date = new Date(year, month, 1);
 
-    // 使用 getDay() 方法獲取星期幾
     return date.getDay();
 }
 
