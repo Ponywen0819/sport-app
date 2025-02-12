@@ -6,18 +6,18 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { IconButton } from "./icon-botton";
 
 
-type CalenderDate = {
+type CalendarDate = {
   year: number,
   month: number,
   day: number
 }
 
 type DateSelectorContext = {
-  selectedDate: CalenderDate
+  selectedDate: CalendarDate
   displayYear: number
   displayMonth: number
 
-  onSelectDate: (date: CalenderDate) => void
+  onSelectDate: (date: CalendarDate) => void
 }
 
 const context = createContext<DateSelectorContext | null>(null);
@@ -33,7 +33,7 @@ const useDateSelectorContext = () => {
 
 
 export const DateSelector = () => {
-  const defaultSelectedDate = useMemo(() => getCurrentCalenderDate(), [])
+  const defaultSelectedDate = useMemo(() => getCurrentCalendarDate(), [])
 
   const [selectedDate, setSelectedDate] = useState(defaultSelectedDate)
   const [displayYear, setDisplayYear] = useState(defaultSelectedDate.year)
@@ -60,7 +60,7 @@ export const DateSelector = () => {
     setDisplayMonth(currentDate.getMonth())
   }
 
-  const handleSelectDate = (date: CalenderDate) => {
+  const handleSelectDate = (date: CalendarDate) => {
     const { year, month } = date
 
     setDisplayYear(year)
@@ -201,12 +201,12 @@ const getNextYearAndMonth = (year: number, month: number) => {
 }
 
 
-type DateButtonProps = CalenderDate
+type DateButtonProps = CalendarDate
 
 const DateButton = (props: DateButtonProps) => {
   const { year, month, day } = props
   const { displayYear, displayMonth, selectedDate, onSelectDate } = useDateSelectorContext()
-  const currentDate = getCurrentCalenderDate()
+  const currentDate = getCurrentCalendarDate()
 
 
   const isSelectedDate = year === selectedDate.year && month === selectedDate.month && day === selectedDate.day
@@ -248,7 +248,7 @@ const BackToTodayBotton = (props: BackToTodayBottonProps) => {
   </button>
 }
 
-const getCurrentCalenderDate = (): CalenderDate => {
+const getCurrentCalendarDate = (): CalendarDate => {
   const currentDate = getCurrentDate()
   return {
     year: currentDate.getFullYear(),
