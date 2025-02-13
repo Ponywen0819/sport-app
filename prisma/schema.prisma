@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String  @id @default(uuid())
+  email String  @unique
+  name  String?
+
+  meals       Meal[]
+  BodyIndexes BodyIndex[]
+}
+
+model BodyIndex {
+  id String @id @default(uuid())
+
+  date DateTime
+
+  height Int
+
+  // 身體組成
+
+  weight        Int
+  totalWater    Int // 總水量 (l)
+  proteinWeight Int // 蛋白質重 (g)
+  mineralWeight Int // 礦物質重 (kg)
+  bodyFatWeight Int // 體脂肪重 (kg)
+
+  skeletalMuscleWeight Int // 骨骼肌重 (kg)
+
+  // 肥胖指數
+  visceralFatIndex Int // 內臟脂肪指數 (1-59)
+
+  basalMetabolicRate Int // 基礎代謝率 (kcal/day)
+
+  bodyFatPercentage Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Meal {
+  id String @id @default(uuid())
+
+  date DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  foods Food[]
+
+  mealTypeId Int
+  mealType   MealType @relation(fields: [mealTypeId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model MealType {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  meals Meal[]
+}
+
+model Food {
+  id   String @id @default(uuid())
+  name String
+
+  weight   Int
+  calories Int
+  protein  Int
+
+  fat                Int
+  transFat           Int // 反式脂肪 (g)
+  saturatedFat       Int // 飽和脂肪 (g)
+  monounsaturatedFat Int // 單元不飽和脂肪 (g)
+  polyunsaturatedFat Int // 多元不飽和脂肪 (g)
+
+  carbs Int
+  sugar Int // 糖 (g)
+
+  dietaryFiber Int // 膳食纖維 (g)
+
+  sodium    Int // 鈉 (mg)
+  potassium Int // 鉀 (mg)
+
+  mealId String
+  meal   Meal   @relation(fields: [mealId], references: [id])
+}
