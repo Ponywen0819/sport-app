@@ -3,10 +3,10 @@ import {
   checkIsRequestError,
   RequestErrorType,
 } from "@/utils/api";
-import { LoginRequestSchema } from "@/zod/auth-schema";
+import { LoginRequestSchema, PublicUserSchema } from "@/zod/auth-schema";
 import { PrismaClient, Prisma, User } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { Jwt } from "jsonwebtoken";
 
 export const POST = async (request: Request) => {
   const dbClient = new PrismaClient();
@@ -41,15 +41,17 @@ export const POST = async (request: Request) => {
       return new Response("invalid email or password", { status: 403 });
     }
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      } as User,
-      process.env.SECRET || "",
-      { expiresIn: "1h" }
-    );
+    const jwtPayload = PublicUserSchema.parse({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    const jwtOptions: jwt.SignOptions = {
+      expiresIn: "1h",
+    };
+
+    const token = jwt.sign(jwtPayload, process.env.SECRET || "", jwtOptions);
 
     return new Response(JSON.stringify({ token }), { status: 200 });
   } catch (err) {
@@ -61,5 +63,7 @@ export const POST = async (request: Request) => {
           return new Response("not ", { status: 401 });
       }
     }
+
+    return new Response("Unknown Error", { status: 500 });
   }
 };

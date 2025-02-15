@@ -1,15 +1,22 @@
 // src/stores/counter-store.ts
 import { createStore } from "zustand/vanilla";
-import { PrismaClient, User } from "@prisma/client";
+import {
+  AuthTokenPayloadSchema,
+  LoginRequestSchema,
+  LoginResponseSchema,
+  PublicUserSchema,
+} from "@/zod/auth-schema";
+import { z } from "zod";
+import jwt from "jsonwebtoken";
+import Cookies from "js-cookie";
 
-export type AuthState = { user: User | null };
+type PublicUser = z.infer<typeof PublicUserSchema>;
 
-type LoginPayload = {
-  email: string;
-  password: string;
-};
+export type AuthState = { user: PublicUser | null };
 
-type LoginFunction = (payload: LoginPayload) => Promise<User | null>;
+type LoginPayload = z.infer<typeof LoginRequestSchema>;
+
+type LoginFunction = (payload: LoginPayload) => Promise<PublicUser | null>;
 
 export type AuthActions = {
   login: LoginFunction;
@@ -22,18 +29,45 @@ export const defaultInitState: AuthState = {
   user: null,
 };
 
-const handleLogin: LoginFunction = async (payload) => {
-  const { email, password } = payload;
-};
-
-const Logout = () => {
-  return null;
-};
-
 export const createAuthStore = (initState: AuthState = defaultInitState) => {
   return createStore<AuthStore>()((set) => ({
     ...initState,
-    login: handleLogin,
-    logout: Logout,
+    login: async (payload: LoginPayload) => {
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        return null;
+      }
+
+      try {
+        const json = await res.json();
+        const { token } = LoginResponseSchema.parse(json);
+        const tokenPayload = jwt.decode(token);
+
+        const { email, id, name, exp } =
+          AuthTokenPayloadSchema.parse(tokenPayload);
+
+        const user = PublicUserSchema.parse({
+          email,
+          id,
+          name,
+        });
+
+        set({ user });
+
+        Cookies.set("token", token, { expires: exp });
+
+        return user;
+      } catch (error) {
+        return null;
+      }
+    },
+    logout: () => {
+      set({ user: null });
+      Cookies.remove("token");
+    },
   }));
 };

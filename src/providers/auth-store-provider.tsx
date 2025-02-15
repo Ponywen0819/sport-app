@@ -1,15 +1,16 @@
 "use client";
 
-import {
-  type ReactNode,
-  createContext,
-  useRef,
-  useContext,
-  PropsWithChildren,
-} from "react";
+import { createContext, useRef, useContext, PropsWithChildren } from "react";
+import jwt from "jsonwebtoken";
+import Cookies from "js-cookie";
 import { useStore } from "zustand";
 
-import { type AuthStore, createAuthStore } from "@/stores/auth-store";
+import {
+  AuthState,
+  type AuthStore,
+  createAuthStore,
+} from "@/stores/auth-store";
+import { AuthTokenPayloadSchema, PublicUserSchema } from "@/zod/auth-schema";
 
 export type CounterStoreApi = ReturnType<typeof createAuthStore>;
 
@@ -25,7 +26,9 @@ export const AuthStoreProvider = (props: AuthStoreProviderProps) => {
   const storeRef = useRef<CounterStoreApi>(undefined);
 
   if (!storeRef.current) {
-    storeRef.current = createAuthStore();
+    const user = getUserInToken();
+    const initState: AuthState = { user };
+    storeRef.current = createAuthStore(initState);
   }
 
   return (
@@ -43,4 +46,26 @@ export const useAuthStore = <T,>(selector: (store: AuthStore) => T): T => {
   }
 
   return useStore(context, selector);
+};
+
+const getUserInToken = () => {
+  const token = Cookies.get("token");
+  if (!token) {
+    return null;
+  }
+  const tokenPayload = AuthTokenPayloadSchema.safeParse(jwt.decode(token));
+
+  if (!tokenPayload.success) {
+    return null;
+  }
+
+  const { email, id, name } = tokenPayload.data;
+
+  const user = PublicUserSchema.parse({
+    email,
+    id,
+    name,
+  });
+
+  return user;
 };
