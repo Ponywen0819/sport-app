@@ -4,6 +4,7 @@ import "./globals.css";
 import { CounterStoreProvider } from "@/providers/counter-store-provider";
 import Header from "@/components/header";
 import { AuthStoreProvider } from "@/providers/auth-store-provider";
+import { LoginModel } from "@/components/login-model";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         <AuthStoreProvider>
           <Header />
           {children}
+          <LoginModel />
         </AuthStoreProvider>
       </body>
     </html>

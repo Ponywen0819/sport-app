@@ -58,7 +58,7 @@ export const createAuthStore = (initState: AuthState = defaultInitState) => {
 
         set({ user });
 
-        Cookies.set("token", token, { expires: exp });
+        Cookies.set("token", token, { expires: new Date(exp * 1000) });
 
         return user;
       } catch (error) {
