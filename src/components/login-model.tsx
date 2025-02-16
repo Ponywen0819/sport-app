@@ -7,7 +7,9 @@ import {
 import {
   InputHTMLAttributes,
   PropsWithChildren,
+  useEffect,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -22,11 +24,19 @@ import { AuthTokenPayloadSchema, PublicUserSchema } from "@/zod/auth-schema";
 import jwt from "jsonwebtoken";
 
 export const LoginModel = () => {
+  const [isFirstRender, setIsFirstRender] = useState(false);
   const user = useAuthStore((state) => state.user);
   const isLogin = user !== null;
-  const className = `fixed inset-0 bg-gray-600/90 flex items-center justify-center text-stone-900 transition-all duration-500 ${
-    isLogin ? "fade-out" : "fade-in"
-  }`;
+
+  const className = `fixed inset-0 bg-gray-600/90 flex items-center justify-center text-stone-900  
+    ${isLogin ? "fade-out" : "fade-in"}
+  `;
+
+  useEffect(() => {
+    setIsFirstRender(true);
+  }, []);
+
+  if (!isFirstRender) return null;
 
   return (
     <AnimatePresence isVisible={!isLogin}>
@@ -43,11 +53,13 @@ type AnimatePresenceProps = PropsWithChildren<{
 
 const AnimatePresence = ({ isVisible, children }: AnimatePresenceProps) => {
   const [shouldRender, setShouldRender] = useState(isVisible);
+
   useLayoutEffect(() => {
     if (isVisible) {
       setShouldRender(true); // 當 isVisible = true，直接顯示
     } else {
-      setTimeout(() => setShouldRender(false), 500); // 延遲 500ms 才移除
+      const timeout = setTimeout(() => setShouldRender(false), 500); // 延遲 500ms 才移除
+      return () => clearTimeout(timeout);
     }
   }, [isVisible]);
 
