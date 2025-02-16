@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuthStore } from "@/providers/auth-store-provider";
 import {
-  HTMLAttributes,
+  AuthStoreContext,
+  useAuthStore,
+} from "@/providers/auth-store-provider";
+import {
   InputHTMLAttributes,
   PropsWithChildren,
-  useEffect,
   useLayoutEffect,
-  useRef,
   useState,
 } from "react";
 import {
@@ -17,10 +17,13 @@ import {
   useForm,
   useFormContext,
 } from "react-hook-form";
+import Cookies from "js-cookie";
+import { AuthTokenPayloadSchema, PublicUserSchema } from "@/zod/auth-schema";
+import jwt from "jsonwebtoken";
+
 export const LoginModel = () => {
   const user = useAuthStore((state) => state.user);
   const isLogin = user !== null;
-
   const className = `fixed inset-0 bg-gray-600/90 flex items-center justify-center text-stone-900 transition-all duration-500 ${
     isLogin ? "fade-out" : "fade-in"
   }`;
@@ -40,8 +43,7 @@ type AnimatePresenceProps = PropsWithChildren<{
 
 const AnimatePresence = ({ isVisible, children }: AnimatePresenceProps) => {
   const [shouldRender, setShouldRender] = useState(isVisible);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isVisible) {
       setShouldRender(true); // 當 isVisible = true，直接顯示
     } else {
@@ -59,7 +61,7 @@ type LoginFormField = {
 const LoginForm = () => {
   const loginHandler = useAuthStore((state) => state.login);
   const useFormReturn = useForm<LoginFormField>();
-  const { register, setError } = useFormReturn;
+  const { setError } = useFormReturn;
 
   const handleSubmit = useFormReturn.handleSubmit(async (data) => {
     const user = await loginHandler(data);
@@ -184,4 +186,26 @@ const SubmitButton = () => {
       <span>登入</span>
     </button>
   );
+};
+
+const getUserInToken = () => {
+  const token = Cookies.get("token");
+  if (!token) {
+    return null;
+  }
+  const tokenPayload = AuthTokenPayloadSchema.safeParse(jwt.decode(token));
+
+  if (!tokenPayload.success) {
+    return null;
+  }
+
+  const { email, id, name } = tokenPayload.data;
+
+  const user = PublicUserSchema.parse({
+    email,
+    id,
+    name,
+  });
+
+  return user;
 };

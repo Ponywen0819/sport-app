@@ -1,5 +1,5 @@
 // src/stores/counter-store.ts
-import { createStore } from "zustand/vanilla";
+import { createStore } from "zustand";
 import {
   AuthTokenPayloadSchema,
   LoginRequestSchema,

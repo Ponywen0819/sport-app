@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useRef, useContext, PropsWithChildren } from "react";
+import {
+  createContext,
+  useRef,
+  useContext,
+  PropsWithChildren,
+  useEffect,
+  useLayoutEffect,
+} from "react";
 import jwt from "jsonwebtoken";
 import Cookies from "js-cookie";
 import { useStore } from "zustand";
@@ -16,8 +23,7 @@ export type CounterStoreApi = ReturnType<typeof createAuthStore>;
 
 type ProviderContextType = CounterStoreApi | undefined;
 
-export const CounterStoreContext =
-  createContext<ProviderContextType>(undefined);
+export const AuthStoreContext = createContext<ProviderContextType>(undefined);
 
 export type AuthStoreProviderProps = PropsWithChildren<{}>;
 
@@ -26,20 +32,24 @@ export const AuthStoreProvider = (props: AuthStoreProviderProps) => {
   const storeRef = useRef<CounterStoreApi>(undefined);
 
   if (!storeRef.current) {
-    const user = getUserInToken();
-    const initState: AuthState = { user };
-    storeRef.current = createAuthStore(initState);
+    storeRef.current = createAuthStore();
   }
 
+  useEffect(() => {
+    if (!storeRef.current) return;
+    const user = getUserInToken();
+    storeRef.current.setState({ user });
+  }, []);
+
   return (
-    <CounterStoreContext.Provider value={storeRef.current}>
+    <AuthStoreContext.Provider value={storeRef.current}>
       {children}
-    </CounterStoreContext.Provider>
+    </AuthStoreContext.Provider>
   );
 };
 
 export const useAuthStore = <T,>(selector: (store: AuthStore) => T): T => {
-  const context = useContext(CounterStoreContext);
+  const context = useContext(AuthStoreContext);
 
   if (!context) {
     throw new Error(`useAuthStore must be used within AuthStoreProvider`);

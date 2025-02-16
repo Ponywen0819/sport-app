@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UserButton } from "./user-button";
 
 const Header = () => {
   return (
@@ -10,9 +11,12 @@ const Header = () => {
           </h1>
         </Link>
         <nav>
-          <ul className="flex space-x-4">
+          <ul className="flex items-center space-x-4">
             <HeaderLink href="/workouts">鍛煉</HeaderLink>
             <HeaderLink href="/nutrition">營養</HeaderLink>
+            <li>
+              <UserButton />
+            </li>
           </ul>
         </nav>
       </div>
