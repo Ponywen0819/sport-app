@@ -1,7 +1,15 @@
 "use client";
 
 import { useAuthStore } from "@/providers/auth-store-provider";
-import { HTMLAttributes, InputHTMLAttributes } from "react";
+import {
+  HTMLAttributes,
+  InputHTMLAttributes,
+  PropsWithChildren,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   FormProvider,
   useController,
@@ -9,18 +17,39 @@ import {
   useForm,
   useFormContext,
 } from "react-hook-form";
-import Cookies from "js-cookie";
-
 export const LoginModel = () => {
   const user = useAuthStore((state) => state.user);
+  const isLogin = user !== null;
 
-  if (user !== null) return null;
+  const className = `fixed inset-0 bg-gray-600/90 flex items-center justify-center text-stone-900 transition-all duration-500 ${
+    isLogin ? "fade-out" : "fade-in"
+  }`;
 
   return (
-    <div className="fixed inset-0 bg-gray-600/90 flex items-center justify-center text-stone-900 ">
-      <LoginForm />
-    </div>
+    <AnimatePresence isVisible={!isLogin}>
+      <div className={className}>
+        <LoginForm />
+      </div>
+    </AnimatePresence>
   );
+};
+
+type AnimatePresenceProps = PropsWithChildren<{
+  isVisible: boolean;
+}>;
+
+const AnimatePresence = ({ isVisible, children }: AnimatePresenceProps) => {
+  const [shouldRender, setShouldRender] = useState(isVisible);
+
+  useEffect(() => {
+    if (isVisible) {
+      setShouldRender(true); // 當 isVisible = true，直接顯示
+    } else {
+      setTimeout(() => setShouldRender(false), 500); // 延遲 500ms 才移除
+    }
+  }, [isVisible]);
+
+  return shouldRender ? children : null;
 };
 
 type LoginFormField = {
