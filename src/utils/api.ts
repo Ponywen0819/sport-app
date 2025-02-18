@@ -1,5 +1,6 @@
-import exp from "constants";
 import { z } from "zod";
+import { AuthTokenPayloadSchema } from "@/zod/auth-schema";
+import jwt from "jsonwebtoken";
 
 export enum RequestErrorType {
   INVALID_REQUEST_PAYLOAD = "invalid_request_payload",
@@ -13,6 +14,22 @@ const RequestErrorSchema = z.object({
   }),
 });
 
+export const checkIsRequestBodyJsonOrThrowRequestError = async (
+  request: Request
+): Promise<any> => {
+  try {
+    if (request.headers.get("Content-Type") !== "application/json") {
+      throw new Error("Invalid content type");
+    }
+
+    const json = await request.json();
+    console.log(json);
+    return json;
+  } catch (error) {
+    throw getRequestError(RequestErrorType.INVALID_REQUEST_PAYLOAD);
+  }
+};
+
 export const checkIsPayloadValidOrThrowRequestError = <T>(
   schema: z.ZodType<T>,
   payload: any
@@ -21,14 +38,44 @@ export const checkIsPayloadValidOrThrowRequestError = <T>(
     const res = schema.parse(payload);
     return res;
   } catch (error) {
-    const requestError: z.infer<typeof RequestErrorSchema> = {
-      error: {
-        type: RequestErrorType.INVALID_REQUEST_PAYLOAD,
-        message: "Invalid request payload",
-      },
-    };
-    throw requestError;
+    throw getRequestError(RequestErrorType.INVALID_REQUEST_PAYLOAD);
   }
+};
+
+export const checkIsRequestAuthorizedOrThrowError = (
+  request: Request
+): z.infer<typeof AuthTokenPayloadSchema> => {
+  try {
+    const token = request.headers.get("Authorization");
+    const tokenParts = checkTokenIsValid(token);
+    if (!tokenParts) {
+      throw new Error("Invalid token");
+    }
+
+    const [_, tokenValue] = tokenParts;
+
+    const payload = jwt.verify(tokenValue, process.env.SECRET || "");
+    return AuthTokenPayloadSchema.parse(payload);
+  } catch (error) {
+    throw getRequestError(RequestErrorType.NOT_AUTHORIZED);
+  }
+};
+
+const checkTokenIsValid = (token: string | null): [string, string] | false => {
+  if (!token) {
+    return false;
+  }
+
+  const tokenParts = token.split(" ");
+  if (tokenParts.length !== 2) {
+    return false;
+  }
+
+  const [scheme, tokenValue] = tokenParts;
+  if (scheme !== "Bearer") {
+    return false;
+  }
+  return [scheme, tokenValue] as const;
 };
 
 export const checkIsRequestError = (
@@ -42,12 +89,22 @@ export const checkIsRequestError = (
   return true;
 };
 
-export const throwRequestError = (type: RequestErrorType, message: string) => {
+export const getRequestError = (type: RequestErrorType, message?: string) => {
+  if (!message) message = getDefaultRequestErrorMessages(type);
   const requestError: z.infer<typeof RequestErrorSchema> = {
     error: {
       type,
       message,
     },
   };
-  throw requestError;
+  return requestError;
+};
+
+const getDefaultRequestErrorMessages = (type: RequestErrorType) => {
+  switch (type) {
+    case RequestErrorType.INVALID_REQUEST_PAYLOAD:
+      return "Invalid request payload";
+    case RequestErrorType.NOT_AUTHORIZED:
+      return "Not authorized";
+  }
 };
