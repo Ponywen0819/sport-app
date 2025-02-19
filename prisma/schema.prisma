@@ -59,13 +59,13 @@ model Meal {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  foods Food[]
-
   mealTypeId Int
   mealType   MealType @relation(fields: [mealTypeId], references: [id])
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  MealItem MealItem[]
 
   @@unique([date, userId, mealTypeId])
 }
@@ -99,6 +99,16 @@ model Food {
   sodium    Int // 鈉 (mg)
   potassium Int // 鉀 (mg)
 
+  MealItem MealItem[]
+}
+
+model MealItem {
   mealId String
   meal   Meal   @relation(fields: [mealId], references: [id])
+  foodId String
+  food   Food   @relation(fields: [foodId], references: [id])
+
+  intake Int // 攝取份量 (0.01 份)
+
+  @@id([mealId, foodId])
 }

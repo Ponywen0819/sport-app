@@ -25,7 +25,6 @@ export const checkIsRequestBodyJsonOrThrowRequestError = async (
     }
 
     const json = await request.json();
-    console.log(json);
     return json;
   } catch (error) {
     throw getRequestError(RequestErrorType.INVALID_REQUEST_PAYLOAD);

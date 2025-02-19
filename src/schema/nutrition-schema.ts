@@ -1,3 +1,4 @@
+import { i } from "motion/react-client";
 import { date, z } from "zod";
 
 export const GetNutritionOverRequestSchema = z.object({
@@ -33,3 +34,39 @@ export const GetMealResponseSchema = z.object({
   mealType: MealTypeEnum,
   items: z.array(GetMealFoodItemSchema),
 });
+
+export const CreateFoodRequestSchema = z.object({
+  name: z.string(),
+  weight: z.number(),
+  calories: z.number(),
+  protein: z.number(),
+  fat: z.number(),
+  carbs: z.number(),
+  transFat: z.number().optional(),
+  saturatedFat: z.number().optional(),
+  monounsaturatedFat: z.number().optional(),
+  polyunsaturatedFat: z.number().optional(),
+  sugar: z.number().optional(),
+  dietaryFiber: z.number().optional(),
+  sodium: z.number().optional(),
+  potassium: z.number().optional(),
+});
+
+const OnlyIdSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const CreateFoodResponseSchema = OnlyIdSchema;
+
+export const UpdateFoodRequestSchema = CreateFoodRequestSchema.partial();
+
+export const UpdateFoodResponseSchema = OnlyIdSchema;
+
+export const DeleteFoodRequestSchema = OnlyIdSchema;
+
+export const DeleteFoodResponseSchema = OnlyIdSchema;
+
+export const GetFoodRequestSchema = OnlyIdSchema;
+
+export const GetFoodResponseSchema =
+  CreateFoodRequestSchema.merge(OnlyIdSchema);
