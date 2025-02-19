@@ -9,7 +9,7 @@ import {
 import {
   GetNutritionOverRequestSchema,
   GetNutritionOverResponseSchema,
-} from "@/zod/nutrition-schema";
+} from "@/schema/nutrition-schema";
 import { PrismaClient, Food } from "@prisma/client";
 import { z } from "zod";
 

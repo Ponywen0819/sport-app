@@ -13,12 +13,8 @@ import jwt from "jsonwebtoken";
 import Cookies from "js-cookie";
 import { useStore } from "zustand";
 
-import {
-  AuthState,
-  type AuthStore,
-  createAuthStore,
-} from "@/stores/auth-store";
-import { AuthTokenPayloadSchema, PublicUserSchema } from "@/zod/auth-schema";
+import { type AuthStore, createAuthStore } from "@/stores/auth-store";
+import { AuthTokenPayloadSchema, PublicUserSchema } from "@/schema/auth-schema";
 
 export type CounterStoreApi = ReturnType<typeof createAuthStore>;
 
@@ -38,8 +34,9 @@ export const AuthStoreProvider = (props: AuthStoreProviderProps) => {
 
   useEffect(() => {
     if (!storeRef.current) return;
-    const user = getUserInToken();
-    storeRef.current.setState({ user });
+    const [user, token] = getUserInToken();
+
+    storeRef.current.setState({ user, token });
   }, []);
 
   return (
@@ -59,15 +56,19 @@ export const useAuthStore = <T,>(selector: (store: AuthStore) => T): T => {
   return useStore(context, selector);
 };
 
+export const selectIsLogin = () => {
+  return useAuthStore((store) => store.user !== null);
+};
+
 const getUserInToken = () => {
   const token = Cookies.get("token");
   if (!token) {
-    return null;
+    return [null, null] as const;
   }
   const tokenPayload = AuthTokenPayloadSchema.safeParse(jwt.decode(token));
 
   if (!tokenPayload.success) {
-    return null;
+    return [null, null] as const;
   }
 
   const { email, id, name } = tokenPayload.data;
@@ -78,5 +79,5 @@ const getUserInToken = () => {
     name,
   });
 
-  return user;
+  return [user, token] as const;
 };

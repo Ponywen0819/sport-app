@@ -5,14 +5,14 @@ import {
   LoginRequestSchema,
   LoginResponseSchema,
   PublicUserSchema,
-} from "@/zod/auth-schema";
+} from "@/schema/auth-schema";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import Cookies from "js-cookie";
 
 type PublicUser = z.infer<typeof PublicUserSchema>;
 
-export type AuthState = { user: PublicUser | null };
+export type AuthState = { user: PublicUser | null; token: string | null };
 
 type LoginPayload = z.infer<typeof LoginRequestSchema>;
 
@@ -27,6 +27,7 @@ export type AuthStore = AuthState & AuthActions;
 
 export const defaultInitState: AuthState = {
   user: null,
+  token: null,
 };
 
 export const createAuthStore = (initState: AuthState = defaultInitState) => {
@@ -56,7 +57,7 @@ export const createAuthStore = (initState: AuthState = defaultInitState) => {
           name,
         });
 
-        set({ user });
+        set({ user, token });
 
         Cookies.set("token", token, { expires: new Date(exp * 1000) });
 
@@ -66,7 +67,7 @@ export const createAuthStore = (initState: AuthState = defaultInitState) => {
       }
     },
     logout: () => {
-      set({ user: null });
+      set({ user: null, token: null });
       Cookies.remove("token");
     },
   }));

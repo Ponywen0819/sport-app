@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AuthTokenPayloadSchema } from "@/zod/auth-schema";
+import { AuthTokenPayloadSchema } from "@/schema/auth-schema";
 import jwt from "jsonwebtoken";
 
 export enum RequestErrorType {

@@ -3,7 +3,7 @@ import {
   checkIsRequestError,
   RequestErrorType,
 } from "@/utils/api";
-import { LoginRequestSchema, PublicUserSchema } from "@/zod/auth-schema";
+import { LoginRequestSchema, PublicUserSchema } from "@/schema/auth-schema";
 import { PrismaClient, Prisma, User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt, { Jwt } from "jsonwebtoken";

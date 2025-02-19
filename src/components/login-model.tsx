@@ -20,7 +20,7 @@ import {
   useFormContext,
 } from "react-hook-form";
 import Cookies from "js-cookie";
-import { AuthTokenPayloadSchema, PublicUserSchema } from "@/zod/auth-schema";
+import { AuthTokenPayloadSchema, PublicUserSchema } from "@/schema/auth-schema";
 import jwt from "jsonwebtoken";
 
 export const LoginModel = () => {
