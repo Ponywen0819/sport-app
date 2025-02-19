@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 export enum RequestErrorType {
   INVALID_REQUEST_PAYLOAD = "invalid_request_payload",
   NOT_AUTHORIZED = "not_authorized",
+  RESOURCE_NOT_FOUND = "resource_not_found",
+  UNKNOWN_ERROR = "unknown_error",
 }
 
 const RequestErrorSchema = z.object({
@@ -106,5 +108,11 @@ const getDefaultRequestErrorMessages = (type: RequestErrorType) => {
       return "Invalid request payload";
     case RequestErrorType.NOT_AUTHORIZED:
       return "Not authorized";
+    case RequestErrorType.RESOURCE_NOT_FOUND:
+      return "Resource not found";
+    case RequestErrorType.UNKNOWN_ERROR:
+      return "Unknown error";
+    default:
+      return "Unknown error";
   }
 };

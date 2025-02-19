@@ -66,11 +66,13 @@ model Meal {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([date, userId, mealTypeId])
 }
 
 model MealType {
   id   Int    @id @default(autoincrement())
-  name String
+  name String @unique
 
   meals Meal[]
 }
