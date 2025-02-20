@@ -37,9 +37,6 @@ export const GET = async (request: NextRequest) => {
     }
 
     const meal = await dbClient.meal.findUnique({
-      include: {
-        foods: true,
-      },
       where: {
         date_userId_mealTypeId: {
           userId: authTokenPayload.id,
@@ -53,7 +50,24 @@ export const GET = async (request: NextRequest) => {
       return new Response("Meal Not Found", { status: 404 });
     }
 
-    const items = meal.foods.map((food) =>
+    const foods = await dbClient.mealItem.findMany({
+      select: {
+        food: {
+          select: {
+            name: true,
+            calories: true,
+            carbs: true,
+            fat: true,
+            protein: true,
+          },
+        },
+      },
+      where: {
+        mealId: meal.id,
+      },
+    });
+
+    const items = foods.map(({ food }) =>
       GetMealFoodItemSchema.parse({
         name: food.name,
         calories: food.calories,
