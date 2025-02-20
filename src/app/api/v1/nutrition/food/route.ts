@@ -1,12 +1,16 @@
+import { ApiHandler } from "@/lib/server/api/handler";
 import {
   CreateFoodRequestSchema,
   CreateFoodResponseSchema,
+  GetFoodRequestSchema,
+  GetFoodResponseSchema,
 } from "@/schema/nutrition-schema";
 import {
   checkIsPayloadValidOrThrowRequestError,
   checkIsRequestAuthorizedOrThrowError,
   checkIsRequestBodyJsonOrThrowRequestError,
   checkIsRequestError,
+  getRequestError,
   RequestErrorType,
 } from "@/utils/api";
 import { Food, PrismaClient } from "@prisma/client";
@@ -31,6 +35,7 @@ const defaultFoodRecord: z.infer<typeof CreateFoodRequestSchema> = {
 };
 
 type FoodWithoutId = Omit<Food, "id">;
+
 export const POST = async (request: NextRequest) => {
   try {
     checkIsRequestAuthorizedOrThrowError(request);
@@ -68,4 +73,27 @@ export const POST = async (request: NextRequest) => {
     }
     return new Response("Unknown Error", { status: 500 });
   }
+};
+
+export const GET = async (request: NextRequest) => {
+  const handler = new ApiHandler(
+    GetFoodRequestSchema,
+    GetFoodResponseSchema,
+    true,
+    ({ prisma, validatedPayload }) => {
+      const food = prisma.food.findUnique({
+        where: {
+          id: validatedPayload.id,
+        },
+      });
+
+      if (!food) {
+        throw getRequestError(RequestErrorType.RESOURCE_NOT_FOUND);
+      }
+
+      return food;
+    }
+  );
+
+  return handler.handle(request);
 };
