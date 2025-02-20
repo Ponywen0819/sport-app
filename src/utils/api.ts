@@ -16,6 +16,8 @@ const RequestErrorSchema = z.object({
   }),
 });
 
+export type RequestError = z.infer<typeof RequestErrorSchema>;
+
 export const checkIsRequestBodyJsonOrThrowRequestError = async (
   request: Request
 ): Promise<any> => {
