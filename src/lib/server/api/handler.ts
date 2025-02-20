@@ -10,6 +10,13 @@ import {
 } from "@/utils/api";
 import { AuthTokenPayloadSchema } from "@/schema/auth-schema";
 
+enum InputSourceEnum {
+  JSON = "json",
+  QUERY = "query",
+}
+
+type InputSource<T> = InputSourceEnum | (() => Promise<T> | T);
+
 type HandlerFunctionParams<T, REQUIRE_AUTH extends boolean = true> = {
   request: NextRequest;
   prisma: PrismaClient;
@@ -32,17 +39,20 @@ export class ApiHandler<
   private resSchema: ZodType<O>;
   private requireAuth: REQUIRE_AUTH;
   private handler: HandlerFunction<I, O, REQUIRE_AUTH>;
+  private inputSource: InputSource<I> = InputSourceEnum.JSON;
 
   constructor(
     reqSchema: ZodType<I>,
     resSchema: ZodType<O>,
     requireAuth: REQUIRE_AUTH,
-    handler: HandlerFunction<I, O, REQUIRE_AUTH>
+    handler: HandlerFunction<I, O, REQUIRE_AUTH>,
+    inputSource: InputSource<I> = InputSourceEnum.JSON
   ) {
     this.reqSchema = reqSchema;
     this.resSchema = resSchema;
     this.requireAuth = requireAuth;
     this.handler = handler;
+    this.inputSource = inputSource;
   }
 
   public async handle(request: NextRequest): Promise<NextResponse> {
@@ -52,7 +62,9 @@ export class ApiHandler<
         ? checkIsRequestAuthorizedOrThrowError(request)
         : null;
 
-      const validatedPayload = await this.getValidatedPayload(request);
+      const validatedPayload = await (typeof this.inputSource === "function"
+        ? this.inputSource()
+        : this.getValidatedPayload(request));
 
       prisma = new PrismaClient();
 
@@ -65,9 +77,9 @@ export class ApiHandler<
 
       const responsePayload = await this.handler(handlerParams);
 
-      const validPayload = this.resSchema.parse(responsePayload);
+      const validResPayload = this.resSchema.parse(responsePayload);
 
-      return NextResponse.json(validPayload);
+      return NextResponse.json(validResPayload);
     } catch (err) {
       return this.getApiErrorResponse(err);
     } finally {
@@ -115,9 +127,10 @@ export class ApiHandler<
   }
 
   private async getValidatedPayload(
-    request: NextRequest
+    request: NextRequest,
+    source: InputSourceEnum = InputSourceEnum.JSON
   ): Promise<z.infer<typeof this.reqSchema>> {
-    if (request.method === "GET") {
+    if (source === InputSourceEnum.QUERY) {
       const searchParams = Object.fromEntries(
         request.nextUrl.searchParams.entries()
       );

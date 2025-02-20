@@ -4,6 +4,7 @@ import {
   CreateFoodResponseSchema,
   GetFoodRequestSchema,
   GetFoodResponseSchema,
+  UpdateFoodRequestSchema,
 } from "@/schema/nutrition-schema";
 import {
   checkIsPayloadValidOrThrowRequestError,
@@ -90,6 +91,26 @@ export const GET = async (request: NextRequest) => {
       if (!food) {
         throw getRequestError(RequestErrorType.RESOURCE_NOT_FOUND);
       }
+
+      return food;
+    }
+  );
+
+  return handler.handle(request);
+};
+
+export const PUT = async (request: NextRequest) => {
+  const handler = new ApiHandler(
+    UpdateFoodRequestSchema,
+    CreateFoodResponseSchema,
+    true,
+    ({ prisma, validatedPayload }) => {
+      const food = prisma.food.update({
+        where: {
+          id: validatedPayload.id,
+        },
+        data: validatedPayload,
+      });
 
       return food;
     }

@@ -58,7 +58,8 @@ const OnlyIdSchema = z.object({
 
 export const CreateFoodResponseSchema = OnlyIdSchema;
 
-export const UpdateFoodRequestSchema = CreateFoodRequestSchema.partial();
+export const UpdateFoodRequestSchema =
+  CreateFoodRequestSchema.partial().merge(OnlyIdSchema);
 
 export const UpdateFoodResponseSchema = OnlyIdSchema;
 
