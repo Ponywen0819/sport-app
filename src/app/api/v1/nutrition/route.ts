@@ -10,12 +10,11 @@ import { ApiHandler } from "@/lib/server/api/handler";
 type FoodWithIntake = Food & { intake: number };
 
 export const GET = async (request: NextRequest) => {
-  const handler = new ApiHandler(
-    GetNutritionOverRequestSchema,
-    GetNutritionOverResponseSchema,
-    true,
-    async ({ request, prisma, validatedPayload, authPayload }) => {
-      const { date } = validatedPayload;
+  const handler = new ApiHandler({
+    reqSchema: GetNutritionOverRequestSchema,
+    resSchema: GetNutritionOverResponseSchema,
+    handler: async ({ request, prisma, requestPayload, authPayload }) => {
+      const { date } = requestPayload;
       const selectDate = new Date(date);
       const meals = await prisma.meal.findMany({
         select: {
@@ -44,8 +43,8 @@ export const GET = async (request: NextRequest) => {
       const nutritionOverview = getNutritionOverviewByFoodList(foodList);
 
       return { nutrition: nutritionOverview };
-    }
-  );
+    },
+  });
 
   return handler.handle(request);
 };

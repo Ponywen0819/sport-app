@@ -2,6 +2,8 @@ import { ApiHandler } from "@/lib/server/api/handler";
 import {
   GetFoodRequestSchema,
   GetFoodResponseSchema,
+  UpdateFoodRequestSchema,
+  UpdateFoodResponseSchema,
 } from "@/schema/nutrition-schema";
 import { getRequestError, RequestErrorType } from "@/utils/api";
 import { NextRequest } from "next/server";
@@ -14,14 +16,13 @@ export const GET = async (
   request: NextRequest,
   { params }: { params: RouteParams }
 ) => {
-  const handler = new ApiHandler(
-    GetFoodRequestSchema,
-    GetFoodResponseSchema,
-    true,
-    ({ prisma, validatedPayload }) => {
+  const handler = new ApiHandler({
+    reqSchema: GetFoodRequestSchema,
+    resSchema: GetFoodResponseSchema,
+    handler: ({ prisma, requestPayload: params }) => {
       const food = prisma.food.findUnique({
         where: {
-          id: validatedPayload.id,
+          id: params.id,
         },
       });
 
@@ -31,12 +32,31 @@ export const GET = async (
 
       return food;
     },
-    async () => {
-      return {
-        id: (await params).id,
-      };
-    }
-  );
+    routeParams: await params,
+  });
+
+  return handler.handle(request);
+};
+
+export const PUT = async (
+  request: NextRequest,
+  { params }: { params: RouteParams }
+) => {
+  const handler = new ApiHandler({
+    reqSchema: UpdateFoodRequestSchema,
+    resSchema: UpdateFoodResponseSchema,
+    handler: ({ prisma, requestPayload, routeParams }) => {
+      const food = prisma.food.update({
+        where: {
+          id: routeParams.id,
+        },
+        data: requestPayload,
+      });
+
+      return food;
+    },
+    routeParams: await params,
+  });
 
   return handler.handle(request);
 };

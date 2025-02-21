@@ -77,14 +77,13 @@ export const POST = async (request: NextRequest) => {
 };
 
 export const GET = async (request: NextRequest) => {
-  const handler = new ApiHandler(
-    GetFoodRequestSchema,
-    GetFoodResponseSchema,
-    true,
-    ({ prisma, validatedPayload }) => {
+  const handler = new ApiHandler({
+    reqSchema: GetFoodRequestSchema,
+    resSchema: GetFoodResponseSchema,
+    handler: ({ prisma, requestPayload }) => {
       const food = prisma.food.findUnique({
         where: {
-          id: validatedPayload.id,
+          id: requestPayload.id,
         },
       });
 
@@ -93,28 +92,8 @@ export const GET = async (request: NextRequest) => {
       }
 
       return food;
-    }
-  );
-
-  return handler.handle(request);
-};
-
-export const PUT = async (request: NextRequest) => {
-  const handler = new ApiHandler(
-    UpdateFoodRequestSchema,
-    CreateFoodResponseSchema,
-    true,
-    ({ prisma, validatedPayload }) => {
-      const food = prisma.food.update({
-        where: {
-          id: validatedPayload.id,
-        },
-        data: validatedPayload,
-      });
-
-      return food;
-    }
-  );
+    },
+  });
 
   return handler.handle(request);
 };

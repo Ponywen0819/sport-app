@@ -15,65 +15,93 @@ enum InputSourceEnum {
   QUERY = "query",
 }
 
-type InputSource<T> = InputSourceEnum | (() => Promise<T> | T);
+type HandlerFunctionAuthPayload<REQUIRE_AUTH extends boolean> =
+  REQUIRE_AUTH extends true ? z.infer<typeof AuthTokenPayloadSchema> : null;
 
-type HandlerFunctionParams<T, REQUIRE_AUTH extends boolean = true> = {
+type HandlerFunctionParams<
+  I extends object,
+  P extends object,
+  REQUIRE_AUTH extends boolean = true
+> = {
   request: NextRequest;
   prisma: PrismaClient;
-  validatedPayload: T;
-  authPayload: REQUIRE_AUTH extends true
-    ? z.infer<typeof AuthTokenPayloadSchema>
-    : null;
+  requestPayload: I;
+  authPayload: HandlerFunctionAuthPayload<REQUIRE_AUTH>;
+  routeParams: P;
 };
 
-type HandlerFunction<T, I, REQUIRE_AUTH extends boolean = true> = (
-  params: HandlerFunctionParams<T, REQUIRE_AUTH>
-) => Promise<I> | I;
+export type HandlerFunction<
+  I extends object,
+  O extends object,
+  P extends object,
+  REQUIRE_AUTH extends boolean = true
+> = (params: HandlerFunctionParams<I, P, REQUIRE_AUTH>) => Promise<O> | O;
+
+type ConstructorParams<
+  I extends object,
+  O extends object,
+  P extends object,
+  REQUIRE_AUTH extends boolean = true
+> = {
+  reqSchema: ZodType<I>;
+  resSchema: ZodType<O>;
+  handler: HandlerFunction<I, O, P, REQUIRE_AUTH>;
+  requireAuth?: REQUIRE_AUTH;
+  inputSource?: InputSourceEnum;
+  routeParams?: P;
+};
 
 export class ApiHandler<
-  I = object,
-  O = object,
+  I extends object = {},
+  O extends object = {},
+  P extends object = {},
   REQUIRE_AUTH extends boolean = true
 > {
   private reqSchema: ZodType<I>;
   private resSchema: ZodType<O>;
   private requireAuth: REQUIRE_AUTH;
-  private handler: HandlerFunction<I, O, REQUIRE_AUTH>;
-  private inputSource: InputSource<I> = InputSourceEnum.JSON;
+  private handler: HandlerFunction<I, O, P, REQUIRE_AUTH>;
+  private inputSource: InputSourceEnum = InputSourceEnum.JSON;
+  private routeParams: P;
 
-  constructor(
-    reqSchema: ZodType<I>,
-    resSchema: ZodType<O>,
-    requireAuth: REQUIRE_AUTH,
-    handler: HandlerFunction<I, O, REQUIRE_AUTH>,
-    inputSource: InputSource<I> = InputSourceEnum.JSON
-  ) {
+  constructor(prams: ConstructorParams<I, O, P, REQUIRE_AUTH>) {
+    const {
+      reqSchema,
+      resSchema,
+      handler,
+      requireAuth = true as REQUIRE_AUTH,
+      inputSource = InputSourceEnum.JSON,
+      routeParams = {} as P,
+    } = prams;
     this.reqSchema = reqSchema;
     this.resSchema = resSchema;
     this.requireAuth = requireAuth;
     this.handler = handler;
     this.inputSource = inputSource;
+    this.routeParams = routeParams;
   }
 
   public async handle(request: NextRequest): Promise<NextResponse> {
     let prisma: PrismaClient | null = null;
     try {
-      const authPayload = this.requireAuth
-        ? checkIsRequestAuthorizedOrThrowError(request)
-        : null;
+      const authPayload = (
+        this.requireAuth ? checkIsRequestAuthorizedOrThrowError(request) : null
+      ) as HandlerFunctionAuthPayload<REQUIRE_AUTH>;
 
-      const validatedPayload = await (typeof this.inputSource === "function"
-        ? this.inputSource()
-        : this.getValidatedPayload(request));
+      const validatedPayload = await this.getValidatedPayload(
+        request,
+        this.inputSource
+      );
 
       prisma = new PrismaClient();
 
       const handlerParams = {
         request,
         prisma,
-        validatedPayload,
-        authPayload,
-      } as HandlerFunctionParams<z.infer<typeof this.reqSchema>, REQUIRE_AUTH>;
+        requestPayload: validatedPayload,
+        authPayload: authPayload,
+        routeParams: this.routeParams,
+      } as HandlerFunctionParams<I, P, REQUIRE_AUTH>;
 
       const responsePayload = await this.handler(handlerParams);
 
@@ -130,7 +158,7 @@ export class ApiHandler<
     request: NextRequest,
     source: InputSourceEnum = InputSourceEnum.JSON
   ): Promise<z.infer<typeof this.reqSchema>> {
-    if (source === InputSourceEnum.QUERY) {
+    if (source === InputSourceEnum.QUERY || request.method === "GET") {
       const searchParams = Object.fromEntries(
         request.nextUrl.searchParams.entries()
       );

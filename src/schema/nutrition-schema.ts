@@ -58,10 +58,10 @@ const OnlyIdSchema = z.object({
 
 export const CreateFoodResponseSchema = OnlyIdSchema;
 
-export const UpdateFoodRequestSchema =
-  CreateFoodRequestSchema.partial().merge(OnlyIdSchema);
+export const UpdateFoodRequestSchema = CreateFoodRequestSchema.partial();
 
-export const UpdateFoodResponseSchema = OnlyIdSchema;
+export const UpdateFoodResponseSchema =
+  CreateFoodRequestSchema.partial().merge(OnlyIdSchema);
 
 export const DeleteFoodRequestSchema = OnlyIdSchema;
 
