@@ -63,11 +63,11 @@ export const UpdateFoodRequestSchema = CreateFoodRequestSchema.partial();
 export const UpdateFoodResponseSchema =
   CreateFoodRequestSchema.partial().merge(OnlyIdSchema);
 
-export const DeleteFoodRequestSchema = OnlyIdSchema;
+export const DeleteFoodRequestSchema = z.object({});
 
 export const DeleteFoodResponseSchema = OnlyIdSchema;
 
-export const GetFoodRequestSchema = OnlyIdSchema;
+export const GetFoodRequestSchema = z.object({});
 
 export const GetFoodResponseSchema =
   CreateFoodRequestSchema.merge(OnlyIdSchema);

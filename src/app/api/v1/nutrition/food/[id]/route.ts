@@ -1,5 +1,7 @@
-import { ApiHandler } from "@/lib/server/api/handler";
+import { ApiHandler, InputSourceEnum } from "@/lib/server/api/handler";
 import {
+  DeleteFoodRequestSchema,
+  DeleteFoodResponseSchema,
   GetFoodRequestSchema,
   GetFoodResponseSchema,
   UpdateFoodRequestSchema,
@@ -19,10 +21,10 @@ export const GET = async (
   const handler = new ApiHandler({
     reqSchema: GetFoodRequestSchema,
     resSchema: GetFoodResponseSchema,
-    handler: ({ prisma, requestPayload: params }) => {
-      const food = prisma.food.findUnique({
+    handler: async ({ prisma, requestPayload, routeParams }) => {
+      const food = await prisma.food.findUnique({
         where: {
-          id: params.id,
+          id: routeParams.id,
         },
       });
 
@@ -35,7 +37,7 @@ export const GET = async (
     routeParams: await params,
   });
 
-  return handler.handle(request);
+  return await handler.handle(request);
 };
 
 export const PUT = async (
@@ -56,6 +58,39 @@ export const PUT = async (
       return food;
     },
     routeParams: await params,
+  });
+
+  return handler.handle(request);
+};
+
+export const DELETE = async (
+  request: NextRequest,
+  { params }: { params: RouteParams }
+) => {
+  const handler = new ApiHandler({
+    reqSchema: DeleteFoodRequestSchema,
+    resSchema: DeleteFoodResponseSchema,
+    handler: async ({ prisma, routeParams }) => {
+      const food = await prisma.food.findUnique({
+        where: {
+          id: routeParams.id,
+        },
+      });
+
+      if (!food) {
+        throw getRequestError(RequestErrorType.RESOURCE_NOT_FOUND);
+      }
+
+      await prisma.food.delete({
+        where: {
+          id: routeParams.id,
+        },
+      });
+
+      return { id: routeParams.id };
+    },
+    routeParams: await params,
+    inputSource: InputSourceEnum.None,
   });
 
   return handler.handle(request);

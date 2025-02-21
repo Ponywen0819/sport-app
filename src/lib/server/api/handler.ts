@@ -10,9 +10,10 @@ import {
 } from "@/utils/api";
 import { AuthTokenPayloadSchema } from "@/schema/auth-schema";
 
-enum InputSourceEnum {
+export enum InputSourceEnum {
   JSON = "json",
   QUERY = "query",
+  None = "none",
 }
 
 type HandlerFunctionAuthPayload<REQUIRE_AUTH extends boolean> =
@@ -149,6 +150,8 @@ export class ApiHandler<
         return 403;
       case RequestErrorType.INVALID_REQUEST_PAYLOAD:
         return 400;
+      case RequestErrorType.RESOURCE_NOT_FOUND:
+        return 404;
       default:
         return 500;
     }
@@ -166,6 +169,8 @@ export class ApiHandler<
         this.reqSchema,
         searchParams
       );
+    } else if (source === InputSourceEnum.None) {
+      return {} as z.infer<typeof this.reqSchema>;
     } else {
       const json = await request.json();
       return checkIsPayloadValidOrThrowRequestError(this.reqSchema, json);
