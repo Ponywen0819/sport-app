@@ -71,3 +71,13 @@ export const GetFoodRequestSchema = z.object({});
 
 export const GetFoodResponseSchema =
   CreateFoodRequestSchema.merge(OnlyIdSchema);
+
+export const SearchFoodRequestSchema = z
+  .object({
+    name: z.string(),
+  })
+  .partial();
+
+export const SearchFoodResponseSchema = z.array(
+  CreateFoodRequestSchema.required().merge(OnlyIdSchema)
+);

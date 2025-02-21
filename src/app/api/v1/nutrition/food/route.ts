@@ -1,10 +1,10 @@
 import { ApiHandler } from "@/lib/server/api/handler";
 import {
   CreateFoodRequestSchema,
-  CreateFoodResponseSchema,
   GetFoodRequestSchema,
   GetFoodResponseSchema,
-  UpdateFoodRequestSchema,
+  SearchFoodRequestSchema,
+  SearchFoodResponseSchema,
 } from "@/schema/nutrition-schema";
 import {
   checkIsPayloadValidOrThrowRequestError,
@@ -78,18 +78,18 @@ export const POST = async (request: NextRequest) => {
 
 export const GET = async (request: NextRequest) => {
   const handler = new ApiHandler({
-    reqSchema: GetFoodRequestSchema,
-    resSchema: GetFoodResponseSchema,
-    handler: ({ prisma, requestPayload }) => {
-      const food = prisma.food.findUnique({
+    reqSchema: SearchFoodRequestSchema,
+    resSchema: SearchFoodResponseSchema,
+    handler: async ({ prisma, requestPayload }) => {
+      const { name } = requestPayload;
+      // find food by name
+      const food = await prisma.food.findMany({
         where: {
-          id: requestPayload.id,
+          name: {
+            contains: name || "",
+          },
         },
       });
-
-      if (!food) {
-        throw getRequestError(RequestErrorType.RESOURCE_NOT_FOUND);
-      }
 
       return food;
     },
