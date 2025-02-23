@@ -111,7 +111,6 @@ export const UserButton = () => {
             style={menuOffset}
           >
             <MenuButton>Profile</MenuButton>
-            <MenuButton>Settings</MenuButton>
             <SignOutBtn />
           </motion.div>
         )}
