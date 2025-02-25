@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "./components/avatar";
 import { InfoSetting } from "./components/info-setting";
+import { PasswdSetting } from "./components/passwd-setting";
 
 const Page = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -15,52 +16,10 @@ const Page = () => {
       </h1>
       <Avatar />
       <InfoSetting />
-      {/* 密碼設定 */}
-      <div className="mb-6">
-        <button
-          onClick={() => setIsPasswordModalOpen(true)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        >
-          更改密碼
-        </button>
 
-        {/* 密碼修改模態框 */}
-        {isPasswordModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 w-96">
-              <h2 className="text-xl font-bold mb-4">更改密碼</h2>
-              <div className="space-y-4">
-                <input
-                  type="password"
-                  placeholder="舊密碼"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="password"
-                  placeholder="新密碼"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="password"
-                  placeholder="確認新密碼"
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="mt-6 flex justify-end gap-2">
-                <button
-                  onClick={() => setIsPasswordModalOpen(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-100 transition-colors"
-                >
-                  取消
-                </button>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                  確認更改
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <span className="block border-b border-gray-300 my-2" />
+
+      <PasswdSetting />
 
       {/* 電子信箱設定 */}
       <div className="mb-6">
