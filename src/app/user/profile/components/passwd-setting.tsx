@@ -1,12 +1,9 @@
-import {
-  InputHTMLAttributes,
-  PropsWithChildren,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+"use client";
+
+import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
+import { InputGroup } from "./input-group";
 
 export const PasswdSetting = () => {
   const [isModelReveal, setIsModelReveal] = useState(false);
@@ -134,22 +131,5 @@ const PasswdModel = (props: PasswdModelProps) => {
         </div>
       </motion.div>
     </Portal>
-  );
-};
-
-type InputGroupProps = InputHTMLAttributes<HTMLInputElement> & {
-  label?: string;
-};
-
-const InputGroup = (props: InputGroupProps) => {
-  const { className, label, ...rest } = props;
-  return (
-    <div>
-      {label && <label className="block text-xs font-medium">{label}</label>}
-      <input
-        {...rest}
-        className={`w-full px-0.5 py-2 text-sm  border-b-2 focus:outline-none  focus:border-blue-500 ${className}`}
-      />
-    </div>
   );
 };

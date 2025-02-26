@@ -1,3 +1,5 @@
+"use client";
+
 import { ChangeEventHandler, useEffect, useId, useState } from "react";
 import {
   FormProvider,
@@ -6,6 +8,7 @@ import {
   useFormContext,
   UseFormProps,
 } from "react-hook-form";
+import { InputGroup } from "./input-group";
 
 type Field = {
   name: string;
@@ -49,14 +52,13 @@ const NameInput = () => {
 
   return (
     <div className="mb-6">
-      <label className="block text-xs font-medium ">名稱</label>
-      <input
+      <InputGroup
         type="text"
+        placeholder="請輸入名稱"
+        label="名稱"
         value={value}
         onChange={handleChange}
         onBlur={onBlur}
-        placeholder="請輸入名稱"
-        className="w-full  px-0.5 py-2 border-b text-sm focus:outline-none focus:border-b-2 focus:border-blue-500"
       />
     </div>
   );
