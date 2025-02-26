@@ -13,8 +13,8 @@ import {
   useState,
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { menu } from "motion/react-client";
 import { useAuthStore } from "@/providers/auth-store-provider";
+import { useRouter } from "next/navigation";
 
 type Offset = {
   top: number;
@@ -110,7 +110,7 @@ export const UserButton = () => {
             className={menuClasses}
             style={menuOffset}
           >
-            <MenuButton>Profile</MenuButton>
+            <MenuButton href="/user/profile">Profile</MenuButton>
             <SignOutBtn />
           </motion.div>
         )}
@@ -137,24 +137,40 @@ enum MenuButtonType {
   BUTTON = "button",
 }
 
-type MenuButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  menuBtnTpe?: MenuButtonType;
-};
+type MenuButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+  (
+    | {
+        menuBtnTpe: MenuButtonType.BUTTON;
+        href?: undefined;
+      }
+    | {
+        menuBtnTpe?: MenuButtonType.LINK;
+        href: string;
+      }
+  );
 
 const MenuButton = (props: MenuButtonProps) => {
   const {
     className,
     menuBtnTpe = MenuButtonType.LINK,
+    href,
     onClick,
     ...rest
   } = props;
+
+  const router = useRouter();
 
   const context = useContext(menuContext);
   if (!context) throw new Error("MenuButton must be used within a MenuContext");
 
   const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
     onClick?.(e);
+    if (menuBtnTpe === MenuButtonType.LINK) router.push(href!);
     context.onOptionClick(menuBtnTpe);
+  };
+
+  const handleMouseEnter: MouseEventHandler<HTMLButtonElement> = (e) => {
+    if (menuBtnTpe === MenuButtonType.LINK) router.prefetch(href!);
   };
 
   const finClassName = `block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
@@ -165,6 +181,7 @@ const MenuButton = (props: MenuButtonProps) => {
     <button
       type="button"
       onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       className={finClassName}
       {...rest}
     />
