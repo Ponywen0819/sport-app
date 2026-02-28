@@ -1,27 +1,46 @@
-import { CalendarDate } from "@/components/date-selector";
-import { GetNutritionOverResponseSchema } from "@/schema/nutrition-schema";
-import { z } from "zod";
+import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
+import type { Food } from "@/lib/notion/mappers/food-mapper";
 
-export const getNutritionOverview = async (
-  date: CalendarDate,
-  token: string
-): Promise<z.infer<typeof GetNutritionOverResponseSchema>> => {
-  const yearString = date.year.toString().padStart(4, "0");
-  const monthString = (date.month + 1).toString().padStart(2, "0");
-  const dayString = date.day.toString().padStart(2, "0");
-  const dateString = `${yearString}-${monthString}-${dayString}`;
-  const fetchUrl = `/api/v1/nutrition?date=${dateString}`;
-  const headers = new Headers();
-  headers.append("Authorization", `Bearer ${token}`);
+type NutritionOverview = { calories: number; protein: number; fat: number; carbs: number };
 
-  const response = await fetch(fetchUrl, {
-    headers,
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+export function getNutritionOverview(date: string): Promise<NutritionOverview> {
+  return apiFetch(`/api/notion/nutrition/overview?date=${date}`);
+}
+
+export function getMealItems(date: string, mealType: MealItem["mealType"]): Promise<MealItem[]> {
+  return apiFetch(`/api/notion/nutrition/meals?date=${date}&mealType=${mealType}`);
+}
+
+export function addMealItem(data: Omit<MealItem, "id">): Promise<{ id: string }> {
+  return apiFetch("/api/notion/nutrition/meals", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
-  try {
-    const data = await response.json();
+}
 
-    return GetNutritionOverResponseSchema.parse(data);
-  } catch (err) {
-    throw new Error("Failed to fetch nutrition data");
-  }
-};
+export function removeMealItem(id: string): Promise<void> {
+  return apiFetch(`/api/notion/nutrition/meals/${id}`, { method: "DELETE" });
+}
+
+export function searchFoods(name?: string): Promise<Food[]> {
+  const url = name
+    ? `/api/notion/nutrition/foods?name=${encodeURIComponent(name)}`
+    : "/api/notion/nutrition/foods";
+  return apiFetch(url);
+}
+
+export function addFood(data: Omit<Food, "id">): Promise<{ id: string }> {
+  return apiFetch("/api/notion/nutrition/foods", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}

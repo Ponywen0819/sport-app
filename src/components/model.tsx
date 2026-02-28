@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 export type ModelProps = PropsWithChildren<{
   show?: boolean;
+  size?: "sm" | "md" | "lg";
   onClose?: () => void;
 }>;
 
@@ -18,6 +19,12 @@ export const Model = (props: ModelProps) => {
     };
   }, [props.show]);
 
+  const containerClasses = {
+    sm: "max-w-96",
+    md: "max-w-128",
+    lg: "max-w-192",
+  };
+
   return (
     <Portal selector="body">
       <AnimatePresence>
@@ -29,7 +36,11 @@ export const Model = (props: ModelProps) => {
             transition={{ duration: 0.3 }}
             className="fixed inset-0 bg-gray-600/90 flex items-center justify-center"
           >
-            <div className="bg-white rounded-lg p-3 w-96 relative">
+            <div
+              className={`bg-white rounded-lg p-3 ${
+                containerClasses[props.size || "md"]
+              } relative`}
+            >
               <CloseButton onClick={props.onClose} />
               {props.children}
             </div>
@@ -48,7 +59,7 @@ const Portal = (props: PortalProps) => {
   const { selector, children } = props;
 
   const mountRef = useRef<HTMLBodyElement>(null);
-  const [isMounted, setIsMounted] = useState(false);
+  const [, setIsMounted] = useState(false);
 
   useEffect(() => {
     mountRef.current = document.querySelector("body");

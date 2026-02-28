@@ -1,136 +1,72 @@
 "use client";
 
 import { CalendarDate } from "@/components/date-selector";
-import { useNutritionOverview } from "@/lib/api-hook/nutrition";
 import { getNutritionOverview } from "@/lib/api/nutrition";
-import { selectIsLogin, useAuthStore } from "@/providers/auth-store-provider";
-import { useDateStore } from "@/providers/date-store-provider";
-import { GetNutritionOverResponseSchema } from "@/schema/nutrition-schema";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "motion/react";
-import React from "react";
+import { motion } from "motion/react";
 
 type NutritionOverviewProps = { date: CalendarDate };
 
+const formatDate = (date: CalendarDate): string => {
+  const y = date.year.toString().padStart(4, "0");
+  const m = (date.month + 1).toString().padStart(2, "0");
+  const d = date.day.toString().padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
 export const NutritionOverview = (props: NutritionOverviewProps) => {
-  return (
-    <div className="bg-white shadow-lg rounded-lg p-4 w-xs text-stone-900">
-      <h2 className="text-lg font-semibold mb-4">Nutrition Intake</h2>
-      <MainContent {...props} />
-    </div>
-  );
-};
-
-const MainContent = (props: NutritionOverviewProps) => {
   const { date } = props;
+  const dateStr = formatDate(date);
 
-  const isLogin = selectIsLogin();
-  const { data, isLoading } = useNutritionOverview(date, isLogin);
-  if (!isLogin) return <UnauthDisplay />;
+  const { data, isLoading } = useQuery({
+    queryKey: ["nutrition-overview", dateStr],
+    queryFn: () => getNutritionOverview(dateStr),
+  });
 
-  if (!data || isLoading) return <OverviewLoading />;
-  return <Overview {...data.nutrition} />;
-};
+  if (isLoading || !data) {
+    return (
+      <div className="bg-stone-800 rounded-2xl p-4 grid grid-cols-4 gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <div className="h-3 w-10 bg-stone-700 rounded animate-pulse" />
+            <div className="h-6 w-8 bg-stone-700 rounded animate-pulse" />
+            <div className="h-2 w-12 bg-stone-700 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-const UnauthDisplay = () => {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex items-center justify-center h-16"
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-stone-800 rounded-2xl p-4 grid grid-cols-4 gap-2"
     >
-      <p className="font-bold">Login to get info</p>
+      <NutritionStat label="蛋白質" value={data.protein} unit="g" color="text-blue-400" />
+      <NutritionStat label="脂肪" value={data.fat} unit="g" color="text-yellow-400" />
+      <NutritionStat label="碳水" value={data.carbs} unit="g" color="text-green-400" />
+      <NutritionStat label="熱量" value={data.calories} unit="kcal" color="text-red-400" />
     </motion.div>
   );
 };
 
-const OverviewLoading = () => {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex items-center justify-center h-16"
-    >
-      <p className="font-bold">Loading...</p>
-    </motion.div>
-  );
-};
-
-type OverviewProps = Zod.infer<
-  typeof GetNutritionOverResponseSchema
->["nutrition"];
-
-const Overview = (props: OverviewProps) => {
-  const { calories, carbs, protein, fat } = props;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="grid grid-cols-4 gap-1 h-16"
-    >
-      <OverviewStat value={protein} type={StatType.Protein} />
-      <OverviewStat value={fat} type={StatType.Fat} />
-      <OverviewStat value={carbs} type={StatType.Carbs} />
-      <OverviewStat value={calories} type={StatType.TotalCalories} />
-    </motion.div>
-  );
-};
-
-type OverviewStatProps = {
+const NutritionStat = ({
+  label,
+  value,
+  unit,
+  color,
+}: {
+  label: string;
   value: number;
-  type: StatType;
-};
-
-const enum StatType {
-  Protein = "Protein",
-  Fat = "Fat",
-  Carbs = "Carbs",
-  TotalCalories = "Total Calories",
-}
-
-const OverviewStat = (props: OverviewStatProps) => {
-  const { value, type } = props;
-  const label = getLabelByType(type);
-  const unit = getUnitByType(type);
-  return (
-    <div className="flex flex-col items-center justify-start">
-      <span className="text-xs text-gray-600">{label}</span>
-      <span className="text-lg font-bold">{value}</span>
-      <span className="text-[0.5rem] text-gray-400">/ 2000 {unit}</span>
-    </div>
-  );
-};
-
-const getLabelByType = (type: StatType) => {
-  switch (type) {
-    case StatType.Protein:
-      return "Protein";
-    case StatType.Fat:
-      return "Fat";
-    case StatType.Carbs:
-      return "Carbs";
-    case StatType.TotalCalories:
-      return "Total";
-  }
-};
-
-const getUnitByType = (type: StatType): string => {
-  switch (type) {
-    case StatType.Protein:
-    case StatType.Fat:
-    case StatType.Carbs:
-      return "g";
-    case StatType.TotalCalories:
-      return "kcal";
-    default:
-      return "";
-  }
-};
+  unit: string;
+  color: string;
+}) => (
+  <div className="flex flex-col items-center gap-0.5">
+    <span className="text-stone-400 text-xs">{label}</span>
+    <span className={`text-lg font-bold ${color}`}>{Math.round(value)}</span>
+    <span className="text-stone-600 text-[0.6rem]">{unit}</span>
+  </div>
+);
 
 export default NutritionOverview;

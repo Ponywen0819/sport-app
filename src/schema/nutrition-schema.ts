@@ -1,5 +1,4 @@
-import { i } from "motion/react-client";
-import { date, z } from "zod";
+import { z } from "zod";
 
 export const GetNutritionOverRequestSchema = z.object({
   date: z.string().date(),

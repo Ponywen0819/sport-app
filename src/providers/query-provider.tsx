@@ -12,9 +12,14 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // With SSR, we usually want to set some default staleTime
-        // above 0 to avoid refetching immediately on the client
-        staleTime: 60 * 1000,
+        // 5 分鐘內不重新打 API，切換回同一個日期直接用 cache
+        staleTime: 5 * 60 * 1000,
+        // cache 保留 15 分鐘（即使 component unmount）
+        gcTime: 15 * 60 * 1000,
+        // 切換 Tab 回來不重新 fetch（個人 app，資料只有自己改）
+        refetchOnWindowFocus: false,
+        // 斷線重連不自動 refetch
+        refetchOnReconnect: false,
       },
     },
   });
