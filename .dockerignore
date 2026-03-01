@@ -1,0 +1,20 @@
+.git
+.gitignore
+.env*
+!.env.example
+node_modules
+.next
+.turbo
+out
+
+# PWA generated files (rebuilt during docker build)
+public/sw.js
+public/workbox-*.js
+
+# Dev files
+README.md
+Dockerfile
+.dockerignore
+scripts/
+prisma/dev.db
+prisma/dev.db-journal
