@@ -10,6 +10,7 @@ import {
   removeExerciseRecord,
   searchExercises,
   getLastExerciseRecord,
+  getPRExerciseRecord,
 } from "@/lib/api/exercise";
 import type {
   ExerciseRecord,
@@ -312,6 +313,12 @@ const AddExerciseModal = ({
     enabled: !!selectedExercise && step === "configure",
   });
 
+  const { data: prRecord } = useQuery({
+    queryKey: ["exercise-pr", selectedExercise?.name],
+    queryFn: () => getPRExerciseRecord(selectedExercise!.name),
+    enabled: !!selectedExercise && step === "configure",
+  });
+
   const filteredExercises = exercises.filter((e) => {
     if (filterEquipment && e.equipment !== filterEquipment) return false;
     if (
@@ -502,17 +509,30 @@ const AddExerciseModal = ({
           <>
             {/* Step 2: 填入重量/組數 */}
             <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-              {/* 上次紀錄 */}
-              {lastRecord && (
-                <div className="bg-stone-800/60 rounded-xl px-4 py-3 flex items-center justify-between">
-                  <span className="text-stone-500 text-xs">上次</span>
-                  <span className="text-stone-300 text-xs">
-                    {lastRecord.weightKg > 0
-                      ? `${convertToDisplay(lastRecord.weightKg, weightUnit)} ${weightUnit} · `
-                      : ""}
-                    {lastRecord.sets} 組 × {lastRecord.reps} 下
-                    <span className="text-stone-600 ml-1">({lastRecord.date})</span>
-                  </span>
+              {/* 上次紀錄 / PR */}
+              {(lastRecord || prRecord) && (
+                <div className="bg-stone-800/60 rounded-xl px-4 py-3 flex flex-col gap-2">
+                  {lastRecord && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-500 text-xs">上次</span>
+                      <span className="text-stone-300 text-xs">
+                        {lastRecord.weightKg > 0
+                          ? `${convertToDisplay(lastRecord.weightKg, weightUnit)} ${weightUnit} · `
+                          : ""}
+                        {lastRecord.sets} 組 × {lastRecord.reps} 下
+                        <span className="text-stone-600 ml-1">({lastRecord.date})</span>
+                      </span>
+                    </div>
+                  )}
+                  {prRecord && prRecord.weightKg > 0 && prRecord.id !== lastRecord?.id && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-yellow-500/80 text-xs font-medium">🏆 PR</span>
+                      <span className="text-yellow-400/90 text-xs">
+                        {convertToDisplay(prRecord.weightKg, weightUnit)} {weightUnit} · {prRecord.sets} 組 × {prRecord.reps} 下
+                        <span className="text-stone-600 ml-1">({prRecord.date})</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 

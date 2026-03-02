@@ -38,3 +38,7 @@ export function getExerciseRecordDates(startDate: string, endDate: string): Prom
 export function getLastExerciseRecord(exerciseName: string): Promise<ExerciseRecord | null> {
   return apiFetch(`/api/notion/exercise/records/last?name=${encodeURIComponent(exerciseName)}`);
 }
+
+export function getPRExerciseRecord(exerciseName: string): Promise<ExerciseRecord | null> {
+  return apiFetch(`/api/notion/exercise/records/pr?name=${encodeURIComponent(exerciseName)}`);
+}

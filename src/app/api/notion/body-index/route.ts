@@ -8,6 +8,13 @@ export async function GET(req: NextRequest) {
 
   const repo = new BodyIndexesRepository(config.client, config.bodyIndexesDatabaseId);
   const date = req.nextUrl.searchParams.get("date");
+  const history = req.nextUrl.searchParams.get("history");
+
+  if (history === "true") {
+    const limit = parseInt(req.nextUrl.searchParams.get("limit") ?? "30", 10);
+    const records = await repo.getHistory(limit);
+    return NextResponse.json(records);
+  }
 
   if (date) {
     const record = await repo.getByDate(date);

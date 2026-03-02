@@ -2,6 +2,7 @@ import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
 import type { Food } from "@/lib/notion/mappers/food-mapper";
 
 type NutritionOverview = { calories: number; protein: number; fat: number; carbs: number };
+export type { DailySummary } from "@/app/api/notion/nutrition/weekly-summary/route";
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -43,4 +44,8 @@ export function addFood(data: Omit<Food, "id">): Promise<{ id: string }> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+}
+
+export function getWeeklySummary(from: string, to: string): Promise<import("@/app/api/notion/nutrition/weekly-summary/route").DailySummary[]> {
+  return apiFetch(`/api/notion/nutrition/weekly-summary?from=${from}&to=${to}`);
 }

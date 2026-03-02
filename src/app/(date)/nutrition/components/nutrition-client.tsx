@@ -5,6 +5,7 @@ import { DateSelector, getCurrentCalendarDate, type CalendarDate } from "@/compo
 import { MealTracker } from "./meal-tracker";
 import { NutritionOverview } from "./nutrition-overview";
 import { SchemaMismatchBanner } from "./schema-mismatch-banner";
+import { WeeklySummary } from "./weekly-summary";
 
 export const NutritionClient = () => {
   const [date, setDate] = useState<CalendarDate>(getCurrentCalendarDate());
@@ -13,6 +14,10 @@ export const NutritionClient = () => {
     <SchemaMismatchBanner>
       <div className="px-4 pb-2">
         <DateSelector value={date} onSelect={setDate} />
+      </div>
+
+      <div className="px-4 pb-3">
+        <WeeklySummary date={date} />
       </div>
 
       <div className="px-4 pb-4">

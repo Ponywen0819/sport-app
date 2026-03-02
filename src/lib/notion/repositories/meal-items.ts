@@ -34,6 +34,20 @@ export class MealItemsRepository {
     return (response.results as PageObjectResponse[]).map(mealItemMapper.fromPage);
   }
 
+  async getByDateRange(from: string, to: string): Promise<MealItem[]> {
+    const response = await this.client.databases.query({
+      database_id: this.databaseId,
+      filter: {
+        and: [
+          { property: "Date", date: { on_or_after: from } },
+          { property: "Date", date: { on_or_before: to } },
+        ],
+      },
+    });
+
+    return (response.results as PageObjectResponse[]).map(mealItemMapper.fromPage);
+  }
+
   async create(data: CreateMealItemInput): Promise<string> {
     const name = `${data.date} ${data.mealType} ${data.foodName}`;
     const response = await this.client.pages.create({

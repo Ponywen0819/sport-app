@@ -3,9 +3,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
-import { IoAdd, IoClose, IoBody, IoChevronBack } from "react-icons/io5";
+import { IoAdd, IoClose, IoBody, IoChevronBack, IoChevronDown, IoChevronUp } from "react-icons/io5";
 import Link from "next/link";
-import { getLatestBodyIndex, addBodyIndex } from "@/lib/api/body-index";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { getLatestBodyIndex, getBodyIndexHistory, addBodyIndex } from "@/lib/api/body-index";
 import type { BodyIndex, CreateBodyIndexInput } from "@/lib/notion/mappers/body-index-mapper";
 import { getCurrentDate } from "@/utils/time";
 import { BodyIndexSchemaGate } from "./components/schema-gate";
@@ -69,12 +78,18 @@ export default function BodyIndexPage() {
 
 // Inner component — only mounts when BodyIndexSchemaGate renders its children
 const BodyIndexData = ({ onAddClick }: { onAddClick: () => void }) => {
-  const { data: latest, isLoading } = useQuery({
+  const { data: latest, isLoading: latestLoading } = useQuery({
     queryKey: ["body-index", "latest"],
     queryFn: getLatestBodyIndex,
   });
 
-  if (isLoading) {
+  const { data: history = [], isLoading: historyLoading } = useQuery({
+    queryKey: ["body-index", "history"],
+    queryFn: () => getBodyIndexHistory(30),
+    enabled: !!latest,
+  });
+
+  if (latestLoading) {
     return (
       <div className="flex flex-col gap-3">
         {[0, 1, 2].map((i) => (
@@ -84,32 +99,44 @@ const BodyIndexData = ({ onAddClick }: { onAddClick: () => void }) => {
     );
   }
 
-  if (latest) return <BodyIndexCards record={latest} />;
+  if (!latest) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <IoBody size={48} className="text-stone-700" />
+        <p className="text-stone-500 text-sm">尚無量測紀錄</p>
+        <button
+          onClick={onAddClick}
+          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-6 py-2.5 text-sm font-medium transition-colors"
+        >
+          新增第一筆
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-4">
-      <IoBody size={48} className="text-stone-700" />
-      <p className="text-stone-500 text-sm">尚無量測紀錄</p>
-      <button
-        onClick={onAddClick}
-        className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-6 py-2.5 text-sm font-medium transition-colors"
-      >
-        新增第一筆
-      </button>
+    <div className="flex flex-col gap-6">
+      <BodyIndexCards record={latest} />
+      {!historyLoading && history.length >= 2 && (
+        <BodyIndexChart records={history} />
+      )}
+      {!historyLoading && history.length > 1 && (
+        <BodyIndexHistory records={history} />
+      )}
     </div>
   );
 };
 
 const BodyIndexCards = ({ record }: { record: BodyIndex }) => {
-  const metrics: { label: string; value: string; unit: string; color: string }[] = [
-    { label: "體重", value: record.weight.toString(), unit: "kg", color: "text-blue-400" },
-    { label: "體脂率", value: record.bodyFatPercentage.toString(), unit: "%", color: "text-orange-400" },
-    { label: "骨骼肌重", value: record.skeletalMuscleWeight.toString(), unit: "kg", color: "text-emerald-400" },
-    { label: "內臟脂肪指數", value: record.visceralFatIndex.toString(), unit: "", color: "text-red-400" },
-    { label: "體脂重", value: record.bodyFatWeight.toString(), unit: "kg", color: "text-yellow-400" },
-    { label: "基礎代謝率", value: record.basalMetabolicRate.toString(), unit: "kcal", color: "text-purple-400" },
-    { label: "蛋白質重", value: record.proteinWeight.toString(), unit: "kg", color: "text-cyan-400" },
-    { label: "體內水分", value: record.totalWater.toString(), unit: "kg", color: "text-sky-400" },
+  const metrics: { label: string; value: number; unit: string; color: string }[] = [
+    { label: "體重", value: record.weight, unit: "kg", color: "text-blue-400" },
+    { label: "體脂率", value: record.bodyFatPercentage, unit: "%", color: "text-orange-400" },
+    { label: "骨骼肌重", value: record.skeletalMuscleWeight, unit: "kg", color: "text-emerald-400" },
+    { label: "內臟脂肪指數", value: record.visceralFatIndex, unit: "", color: "text-red-400" },
+    { label: "體脂重", value: record.bodyFatWeight, unit: "kg", color: "text-yellow-400" },
+    { label: "基礎代謝率", value: record.basalMetabolicRate, unit: "kcal", color: "text-purple-400" },
+    { label: "蛋白質重", value: record.proteinWeight, unit: "kg", color: "text-cyan-400" },
+    { label: "體內水分", value: record.totalWater, unit: "kg", color: "text-sky-400" },
   ];
 
   return (
@@ -120,14 +147,139 @@ const BodyIndexCards = ({ record }: { record: BodyIndex }) => {
           <div key={m.label} className="bg-stone-800 rounded-2xl px-4 py-4">
             <p className="text-stone-500 text-xs mb-1">{m.label}</p>
             <p className={`text-2xl font-bold ${m.color}`}>
-              {m.value > "0" ? m.value : "—"}
-              {m.value > "0" && m.unit && (
+              {m.value > 0 ? m.value : "—"}
+              {m.value > 0 && m.unit && (
                 <span className="text-sm font-normal text-stone-400 ml-1">{m.unit}</span>
               )}
             </p>
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+type ChartMetric = {
+  key: keyof BodyIndex;
+  label: string;
+  color: string;
+  unit: string;
+};
+
+const CHART_METRICS: ChartMetric[] = [
+  { key: "weight", label: "體重", color: "#60a5fa", unit: "kg" },
+  { key: "bodyFatPercentage", label: "體脂率", color: "#fb923c", unit: "%" },
+  { key: "skeletalMuscleWeight", label: "骨骼肌重", color: "#34d399", unit: "kg" },
+];
+
+const BodyIndexChart = ({ records }: { records: BodyIndex[] }) => {
+  const [activeMetric, setActiveMetric] = useState<ChartMetric>(CHART_METRICS[0]);
+
+  // Recharts needs ascending order
+  const chartData = [...records]
+    .reverse()
+    .map((r) => ({
+      date: r.date.slice(5), // Show MM-DD
+      value: r[activeMetric.key] as number,
+    }));
+
+  return (
+    <div className="bg-stone-800 rounded-2xl p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-stone-300 text-sm font-semibold">趨勢圖</p>
+        <div className="flex gap-1">
+          {CHART_METRICS.map((m) => (
+            <button
+              key={m.key as string}
+              onClick={() => setActiveMetric(m)}
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                activeMetric.key === m.key
+                  ? "bg-stone-600 text-stone-100"
+                  : "text-stone-500 hover:text-stone-300"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={160}>
+        <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#292524" />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: "#78716c", fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            tick={{ fill: "#78716c", fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+            domain={["auto", "auto"]}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#1c1917",
+              border: "1px solid #44403c",
+              borderRadius: "12px",
+              color: "#e7e5e4",
+              fontSize: "12px",
+            }}
+            formatter={(v: number | undefined) => v != null ? [`${v} ${activeMetric.unit}`, activeMetric.label] : ["—", activeMetric.label]}
+          />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={activeMetric.color}
+            strokeWidth={2}
+            dot={{ fill: activeMetric.color, r: 3 }}
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const BodyIndexHistory = ({ records }: { records: BodyIndex[] }) => {
+  const [expanded, setExpanded] = useState(false);
+  const displayed = expanded ? records : records.slice(0, 5);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-stone-400 text-sm font-semibold">歷史紀錄</p>
+      <div className="flex flex-col gap-2">
+        {displayed.map((r) => (
+          <div key={r.id} className="bg-stone-800 rounded-2xl px-4 py-3 flex items-center justify-between">
+            <span className="text-stone-400 text-sm">{r.date}</span>
+            <div className="flex items-center gap-4">
+              {r.weight > 0 && (
+                <span className="text-blue-400 text-sm font-semibold">{r.weight} kg</span>
+              )}
+              {r.bodyFatPercentage > 0 && (
+                <span className="text-orange-400 text-sm">{r.bodyFatPercentage}%</span>
+              )}
+              {r.skeletalMuscleWeight > 0 && (
+                <span className="text-emerald-400 text-sm">{r.skeletalMuscleWeight} kg</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {records.length > 5 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center justify-center gap-1 py-2 text-stone-500 text-sm hover:text-stone-300 transition-colors"
+        >
+          {expanded ? (
+            <><IoChevronUp size={14} /> 收起</>
+          ) : (
+            <><IoChevronDown size={14} /> 顯示全部 {records.length} 筆</>
+          )}
+        </button>
+      )}
     </div>
   );
 };

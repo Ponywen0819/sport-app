@@ -32,11 +32,33 @@ export class BodyIndexesRepository {
     return bodyIndexMapper.fromPage(results[0]);
   }
 
+  async getHistory(limit: number = 30): Promise<BodyIndex[]> {
+    const response = await this.client.databases.query({
+      database_id: this.databaseId,
+      sorts: [{ property: "Date", direction: "descending" }],
+      page_size: limit,
+    });
+
+    const results = response.results as PageObjectResponse[];
+    return results.map((r) => bodyIndexMapper.fromPage(r));
+  }
+
   async create(data: CreateBodyIndexInput): Promise<string> {
     const name = `${data.date} Body Check`;
+
+    // Dynamically resolve title property name (may differ from "Name" depending on how the DB was created)
+    const db = await this.client.databases.retrieve({ database_id: this.databaseId });
+    const titleKey = Object.entries(db.properties).find(([, v]) => v.type === "title")?.[0] ?? "Name";
+
+    const props = bodyIndexMapper.toProperties(data, name);
+    if (titleKey !== "Name") {
+      props[titleKey] = props["Name"];
+      delete props["Name"];
+    }
+
     const response = await this.client.pages.create({
       parent: { database_id: this.databaseId },
-      properties: bodyIndexMapper.toProperties(data, name) as Parameters<typeof this.client.pages.create>[0]["properties"],
+      properties: props as Parameters<typeof this.client.pages.create>[0]["properties"],
     });
     return response.id;
   }

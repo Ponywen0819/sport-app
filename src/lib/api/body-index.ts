@@ -14,6 +14,10 @@ export function getBodyIndexByDate(date: string): Promise<BodyIndex | null> {
   return apiFetch(`/api/notion/body-index?date=${date}`);
 }
 
+export function getBodyIndexHistory(limit: number = 30): Promise<BodyIndex[]> {
+  return apiFetch(`/api/notion/body-index?history=true&limit=${limit}`);
+}
+
 export function addBodyIndex(data: CreateBodyIndexInput): Promise<{ id: string }> {
   return apiFetch("/api/notion/body-index", {
     method: "POST",

@@ -7,7 +7,8 @@ import { CalendarDate } from "@/components/date-selector";
 import { getMealItems, addMealItem, removeMealItem, searchFoods, addFood } from "@/lib/api/nutrition";
 import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
 import type { Food } from "@/lib/notion/mappers/food-mapper";
-import { IoAdd, IoClose, IoTrash, IoArrowBack } from "react-icons/io5";
+import { IoAdd, IoClose, IoTrash, IoArrowBack, IoTime } from "react-icons/io5";
+import { useRecentFoods } from "@/providers/recent-foods-provider";
 
 type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack";
 
@@ -149,6 +150,8 @@ const AddFoodModal = ({ mealType, date, onClose, onAdded }: AddFoodModalProps) =
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [intake, setIntake] = useState("100");
+  const recentFoods = useRecentFoods((s) => s.recentFoods);
+  const addRecentFood = useRecentFoods((s) => s.addRecentFood);
 
   const [newFood, setNewFood] = useState({
     name: "",
@@ -182,6 +185,7 @@ const AddFoodModal = ({ mealType, date, onClose, onAdded }: AddFoodModalProps) =
       });
     },
     onSuccess: () => {
+      if (selectedFood) addRecentFood(selectedFood);
       onAdded();
       onClose();
     },
@@ -224,6 +228,7 @@ const AddFoodModal = ({ mealType, date, onClose, onAdded }: AddFoodModalProps) =
         sodium: 0,
         potassium: 0,
       };
+      addRecentFood(created);
       setSelectedFood(created);
       setSearchQuery(newFood.name);
       setView("search");
@@ -280,6 +285,33 @@ const AddFoodModal = ({ mealType, date, onClose, onAdded }: AddFoodModalProps) =
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 pb-2">
+              {!searchQuery && recentFoods.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <IoTime size={12} className="text-stone-500" />
+                    <p className="text-stone-500 text-xs">最近使用</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {recentFoods.slice(0, 5).map((food) => (
+                      <button
+                        key={food.id}
+                        onClick={() => setSelectedFood(food)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors ${
+                          selectedFood?.id === food.id
+                            ? "bg-blue-500/20 border border-blue-500/30"
+                            : "hover:bg-stone-800"
+                        }`}
+                      >
+                        <span className="text-stone-100 text-sm">{food.name}</span>
+                        <span className="text-stone-500 text-xs">
+                          {food.calories} kcal / {food.weight}g
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-t border-stone-800 my-2" />
+                </div>
+              )}
               {isSearching && !foods.length ? (
                 <p className="text-stone-500 text-sm text-center py-4">搜尋中...</p>
               ) : foods.length === 0 ? (
