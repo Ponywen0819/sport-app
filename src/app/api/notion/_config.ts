@@ -29,3 +29,11 @@ export async function getNutritionConfig() {
   if (!token || !foodsDatabaseId || !mealItemsDatabaseId) return null;
   return { client: createNotionClient(token), foodsDatabaseId, mealItemsDatabaseId };
 }
+
+export async function getBodyIndexConfig() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("notion_token")?.value;
+  const bodyIndexesDatabaseId = cookieStore.get("notion_body_indexes_db_id")?.value;
+  if (!token || !bodyIndexesDatabaseId) return null;
+  return { client: createNotionClient(token), bodyIndexesDatabaseId };
+}

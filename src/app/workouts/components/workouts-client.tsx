@@ -2,14 +2,15 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { DateSelector, type CalendarDate } from "@/components/date-selector";
+import { DateSelector, getCurrentCalendarDate, type CalendarDate } from "@/components/date-selector";
 import { ExerciseTracker } from "./exercise-tracker";
 import { getExerciseRecordDates } from "@/lib/api/exercise";
 
-export const WorkoutsClient = ({ initialDate }: { initialDate: CalendarDate }) => {
-  const [date, setDate] = useState<CalendarDate>(initialDate);
-  const [displayYear, setDisplayYear] = useState(initialDate.year);
-  const [displayMonth, setDisplayMonth] = useState(initialDate.month);
+export const WorkoutsClient = () => {
+  const initial = getCurrentCalendarDate();
+  const [date, setDate] = useState<CalendarDate>(initial);
+  const [displayYear, setDisplayYear] = useState(initial.year);
+  const [displayMonth, setDisplayMonth] = useState(initial.month);
 
   const startDate = useMemo(() => {
     const m = String(displayMonth + 1).padStart(2, "0");

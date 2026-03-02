@@ -36,6 +36,22 @@ export class ExerciseRecordsRepository {
     return (response.results as PageObjectResponse[]).map(exerciseRecordMapper.fromPage);
   }
 
+  async getLatestByExercise(exerciseName: string): Promise<ExerciseRecord | null> {
+    const response = await this.client.databases.query({
+      database_id: this.databaseId,
+      filter: {
+        property: "ExerciseName",
+        rich_text: { contains: exerciseName },
+      },
+      sorts: [{ property: "Date", direction: "descending" }],
+      page_size: 1,
+    });
+
+    const results = response.results as PageObjectResponse[];
+    if (results.length === 0) return null;
+    return exerciseRecordMapper.fromPage(results[0]);
+  }
+
   async create(data: CreateExerciseRecordInput): Promise<string> {
     const response = await this.client.pages.create({
       parent: { database_id: this.databaseId },

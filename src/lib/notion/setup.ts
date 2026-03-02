@@ -1,12 +1,14 @@
 import { Client } from "@notionhq/client";
 import type { NotionDatabaseIds } from "@/schema/notion-schema";
 
+type PropertySpec = Record<string, unknown>;
+
 type DatabaseSchema = {
   name: string;
-  properties: Record<string, unknown>;
+  properties: PropertySpec;
 };
 
-const FOODS_DB_SCHEMA: DatabaseSchema = {
+export const FOODS_DB_SCHEMA: DatabaseSchema = {
   name: "🍎 Foods",
   properties: {
     Name: { title: {} },
@@ -26,7 +28,7 @@ const FOODS_DB_SCHEMA: DatabaseSchema = {
   },
 };
 
-const MEAL_ITEMS_DB_SCHEMA: DatabaseSchema = {
+export const MEAL_ITEMS_DB_SCHEMA: DatabaseSchema = {
   name: "🍽️ Meal Items",
   properties: {
     Name: { title: {} },
@@ -51,20 +53,21 @@ const MEAL_ITEMS_DB_SCHEMA: DatabaseSchema = {
   },
 };
 
-const EXERCISE_RECORDS_DB_SCHEMA: DatabaseSchema = {
+export const EXERCISE_RECORDS_DB_SCHEMA: DatabaseSchema = {
   name: "🏋️ Exercise Records",
   properties: {
     Name: { title: {} },
     Date: { date: {} },
-    Weight: { number: { format: "number" } },  // 統一 kg
+    ExerciseName: { rich_text: {} },
+    Weight: { number: { format: "number" } },
     Reps: { number: { format: "number" } },
     Sets: { number: { format: "number" } },
-    DropWeight: { number: { format: "number" } },  // drop set 降重，統一 kg
+    DropWeight: { number: { format: "number" } },
     DropReps: { number: { format: "number" } },
   },
 };
 
-const BODY_INDEXES_DB_SCHEMA: DatabaseSchema = {
+export const BODY_INDEXES_DB_SCHEMA: DatabaseSchema = {
   name: "📊 Body Indexes",
   properties: {
     Name: { title: {} },
@@ -81,6 +84,54 @@ const BODY_INDEXES_DB_SCHEMA: DatabaseSchema = {
     BasalMetabolicRate: { number: { format: "number" } },
   },
 };
+
+export type SchemaCheckResult = {
+  dbId: string;
+  dbName: string;
+  missingProperties: string[];
+  valid: boolean;
+};
+
+/** 比對 Notion DB 的實際屬性 vs 預期 schema，回傳缺少的 property 名稱清單 */
+/** Notion 不允許透過 update API 新增 title 類型屬性（每個 DB 只能有一個） */
+const isTitleProperty = (spec: unknown): boolean =>
+  typeof spec === "object" && spec !== null && "title" in spec;
+
+export async function checkDatabaseSchema(
+  client: Client,
+  dbId: string,
+  schema: DatabaseSchema
+): Promise<SchemaCheckResult> {
+  const db = await client.databases.retrieve({ database_id: dbId });
+  const actualKeys = Object.keys(db.properties);
+  const missingProperties = Object.keys(schema.properties).filter(
+    (key) => !isTitleProperty(schema.properties[key]) && !actualKeys.includes(key)
+  );
+  return {
+    dbId,
+    dbName: schema.name,
+    missingProperties,
+    valid: missingProperties.length === 0,
+  };
+}
+
+/** 將缺少的屬性補齊到現有 Notion DB（只新增，不刪除，不含 title 欄） */
+export async function migrateDatabaseSchema(
+  client: Client,
+  dbId: string,
+  schema: DatabaseSchema,
+  missingProperties: string[]
+): Promise<void> {
+  const addable = missingProperties.filter((key) => !isTitleProperty(schema.properties[key]));
+  if (addable.length === 0) return;
+  const propertiesToAdd = Object.fromEntries(
+    addable.map((key) => [key, schema.properties[key]])
+  );
+  await client.databases.update({
+    database_id: dbId,
+    properties: propertiesToAdd as Parameters<typeof client.databases.update>[0]["properties"],
+  });
+}
 
 async function createDatabase(
   client: Client,

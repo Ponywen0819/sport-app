@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/query-provider";
 import { NotionStoreProvider } from "@/providers/notion-store-provider";
+import { NutritionGoalsProvider } from "@/providers/nutrition-goals-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { SwipeNavigator } from "@/components/swipe-navigator";
 
@@ -46,14 +47,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-stone-900 text-stone-100`}
       >
         <NotionStoreProvider>
-          <QueryProvider>
-            <SwipeNavigator>
-              <main className="max-w-md mx-auto min-h-screen pb-16">
-                {children}
-              </main>
-              <BottomNav />
-            </SwipeNavigator>
-          </QueryProvider>
+          <NutritionGoalsProvider>
+            <QueryProvider>
+              <SwipeNavigator>
+                <main className="max-w-md mx-auto min-h-screen pb-16">
+                  {children}
+                </main>
+                <BottomNav />
+              </SwipeNavigator>
+            </QueryProvider>
+          </NutritionGoalsProvider>
         </NotionStoreProvider>
       </body>
     </html>

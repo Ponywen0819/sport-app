@@ -34,3 +34,7 @@ export function searchExercises(name?: string): Promise<Exercise[]> {
 export function getExerciseRecordDates(startDate: string, endDate: string): Promise<string[]> {
   return apiFetch(`/api/notion/exercise/dates?start=${startDate}&end=${endDate}`);
 }
+
+export function getLastExerciseRecord(exerciseName: string): Promise<ExerciseRecord | null> {
+  return apiFetch(`/api/notion/exercise/records/last?name=${encodeURIComponent(exerciseName)}`);
+}
