@@ -35,9 +35,11 @@ const getText = (prop: PageObjectResponse["properties"][string]): string => {
 export const foodMapper = {
   fromPage: (page: PageObjectResponse): Food => {
     const p = page.properties;
+    const titleProp = Object.values(p).find((v) => v.type === "title");
+    const name = titleProp?.type === "title" ? (titleProp.title[0]?.plain_text ?? "") : "";
     return {
       id: page.id,
-      name: getText(p.Name),
+      name,
       weight: getNumber(p.Weight),
       calories: getNumber(p.Calories),
       protein: getNumber(p.Protein),

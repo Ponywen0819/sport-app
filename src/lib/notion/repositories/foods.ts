@@ -13,10 +13,16 @@ export class FoodsRepository {
   ) {}
 
   async search(name?: string): Promise<Food[]> {
+    let titleKey = "Name";
+    if (name) {
+      const db = await this.client.databases.retrieve({ database_id: this.databaseId });
+      titleKey = Object.entries(db.properties).find(([, v]) => v.type === "title")?.[0] ?? "Name";
+    }
+
     const response = await this.client.databases.query({
       database_id: this.databaseId,
       filter: name
-        ? { property: "Name", title: { contains: name } }
+        ? { property: titleKey, title: { contains: name } }
         : undefined,
       page_size: 50,
     });
