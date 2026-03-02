@@ -40,6 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# serwist / PWA generated
+public/sw.js
+public/swe-worker*.js
+
 .vscode/
 
 prisma/dev.db
