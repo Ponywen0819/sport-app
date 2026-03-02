@@ -50,9 +50,18 @@ export class MealItemsRepository {
 
   async create(data: CreateMealItemInput): Promise<string> {
     const name = `${data.date} ${data.mealType} ${data.foodName}`;
+    const db = await this.client.databases.retrieve({ database_id: this.databaseId });
+    const titleKey = Object.entries(db.properties).find(([, v]) => v.type === "title")?.[0] ?? "Name";
+
+    const props = mealItemMapper.toProperties(data, name);
+    if (titleKey !== "Name") {
+      props[titleKey] = props["Name"];
+      delete props["Name"];
+    }
+
     const response = await this.client.pages.create({
       parent: { database_id: this.databaseId },
-      properties: mealItemMapper.toProperties(data, name) as Parameters<typeof this.client.pages.create>[0]["properties"],
+      properties: props as Parameters<typeof this.client.pages.create>[0]["properties"],
     });
     return response.id;
   }

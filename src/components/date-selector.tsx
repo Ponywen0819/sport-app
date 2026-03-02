@@ -51,7 +51,7 @@ export const DateSelector = (props: DateSelectorProps) => {
   useEffect(() => {
     if (!props.value) return;
     const valueIsChanged = (["year", "month", "day"] as const).every(
-      (key) => props.value![key] === selectedDate[key]
+      (key) => props.value![key] === selectedDate[key],
     );
     if (!valueIsChanged) return;
     setSelectedDate(props.value);
@@ -66,7 +66,7 @@ export const DateSelector = (props: DateSelectorProps) => {
   const handleSwitchToNextMonth = () => {
     const [nextYear, nextMonth] = getNextYearAndMonth(
       displayYear,
-      displayMonth
+      displayMonth,
     );
 
     setDisplayYear(nextYear);
@@ -76,7 +76,7 @@ export const DateSelector = (props: DateSelectorProps) => {
   const handleSwitchToPreviousMonth = () => {
     const [previousYear, previousMonth] = getPreviousYearAndMonth(
       displayYear,
-      displayMonth
+      displayMonth,
     );
 
     setDisplayYear(previousYear);
@@ -108,7 +108,7 @@ export const DateSelector = (props: DateSelectorProps) => {
       onSelectDate: handleSelectDate,
       hints: props.hints ?? {},
     }),
-    [selectedDate, displayYear, displayMonth, props.hints]
+    [selectedDate, displayYear, displayMonth, props.hints],
   );
 
   return (
@@ -150,7 +150,9 @@ export const MonthNavigator = (props: MonthNavigatorProps) => {
       >
         <FaChevronLeft size={12} />
       </button>
-      <span className="text-stone-200 text-sm font-semibold">{monthDisplay}</span>
+      <span className="text-stone-200 text-sm font-semibold">
+        {monthDisplay}
+      </span>
       <button
         onClick={onNextMonth}
         className="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-100 hover:bg-stone-700 transition-colors"
@@ -188,7 +190,7 @@ const Calendar = () => {
 
   const [previousYaer, previousMonth] = getPreviousYearAndMonth(
     displayYear,
-    displayMonth
+    displayMonth,
   );
   const [nextYear, nextMonth] = getNextYearAndMonth(displayYear, displayMonth);
 
@@ -200,7 +202,7 @@ const Calendar = () => {
       year: previousYaer,
       month: previousMonth,
       day: previousDays - offset + i + 1,
-    })
+    }),
   );
 
   const currentMonthDates: DateButtonProps[] = Array.from(
@@ -209,7 +211,7 @@ const Calendar = () => {
       year: displayYear,
       month: displayMonth,
       day: i + 1,
-    })
+    }),
   );
 
   const remainDates = 42 - offset - currentDays;
@@ -219,7 +221,7 @@ const Calendar = () => {
       year: nextYear,
       month: nextMonth,
       day: i + 1,
-    })
+    }),
   );
 
   const dates = [
@@ -276,11 +278,12 @@ const DateButton = (props: DateButtonProps) => {
     <button
       onClick={handleClick}
       className={`relative mx-auto w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors
-        ${isSelectedDate
-          ? "bg-blue-500 text-white font-semibold"
-          : isDisplayingMonth
-          ? "text-stone-200 hover:bg-stone-700"
-          : "text-stone-600 hover:bg-stone-700/50"
+        ${
+          isSelectedDate
+            ? "bg-blue-500 text-white font-semibold"
+            : isDisplayingMonth
+              ? "text-stone-200 hover:bg-stone-700"
+              : "text-stone-600 hover:bg-stone-700/50"
         }
       `}
     >
