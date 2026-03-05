@@ -11,7 +11,9 @@ import {
   searchExercises,
   getLastExerciseRecord,
   getPRExerciseRecord,
+  getExerciseProgress,
 } from "@/lib/api/exercise";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type {
   ExerciseRecord,
   WeightUnit,
@@ -21,7 +23,8 @@ import {
   convertToKg,
 } from "@/lib/notion/mappers/exercise-record-mapper";
 import type { Exercise } from "@/lib/notion/mappers/exercise-mapper";
-import { IoAdd, IoClose, IoTrash, IoArrowForward } from "react-icons/io5";
+import { IoAdd, IoClose, IoTrash, IoArrowForward, IoTime } from "react-icons/io5";
+import { useRecentExercises } from "@/providers/recent-exercises-provider";
 
 const formatDate = (date: CalendarDate): string => {
   const y = date.year.toString().padStart(4, "0");
@@ -319,6 +322,14 @@ const AddExerciseModal = ({
     enabled: !!selectedExercise && step === "configure",
   });
 
+  const [showProgress, setShowProgress] = useState(false);
+
+  const { data: progressRecords = [] } = useQuery({
+    queryKey: ["exercise-progress", selectedExercise?.name],
+    queryFn: () => getExerciseProgress(selectedExercise!.name, 12),
+    enabled: !!selectedExercise && step === "configure" && showProgress,
+  });
+
   const filteredExercises = exercises.filter((e) => {
     if (filterEquipment && e.equipment !== filterEquipment) return false;
     if (
@@ -328,6 +339,9 @@ const AddExerciseModal = ({
       return false;
     return true;
   });
+
+  const recentExercises = useRecentExercises((s) => s.recentExercises);
+  const addRecentExercise = useRecentExercises((s) => s.addRecentExercise);
 
   const addMutation = useMutation({
     mutationFn: () => {
@@ -350,6 +364,7 @@ const AddExerciseModal = ({
       });
     },
     onSuccess: () => {
+      if (selectedExercise) addRecentExercise(selectedExercise);
       onAdded();
       onClose();
     },
@@ -463,6 +478,38 @@ const AddExerciseModal = ({
 
             {/* 動作列表 */}
             <div className="flex-1 overflow-y-auto px-4 pb-4">
+              {!searchQuery && recentExercises.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <IoTime size={12} className="text-stone-500" />
+                    <p className="text-stone-500 text-xs">最近使用</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {recentExercises.slice(0, 5).map((exercise) => (
+                      <button
+                        key={exercise.id}
+                        onClick={() => handleSelectExercise(exercise)}
+                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-stone-800 text-left transition-colors"
+                      >
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-stone-100 text-sm">{exercise.name}</span>
+                          {exercise.muscleGroups.length > 0 && (
+                            <span className="text-stone-500 text-xs truncate">
+                              {exercise.muscleGroups.join(" · ")}
+                            </span>
+                          )}
+                        </div>
+                        {exercise.equipment && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${EQUIPMENT_COLORS[exercise.equipment] ?? "bg-stone-700 text-stone-400"}`}>
+                            {exercise.equipment}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-t border-stone-800 my-2" />
+                </div>
+              )}
               {isSearching && filteredExercises.length === 0 ? (
                 <p className="text-stone-500 text-sm text-center py-4">
                   搜尋中...
@@ -534,6 +581,34 @@ const AddExerciseModal = ({
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* 進度圖 */}
+              <button
+                onClick={() => setShowProgress((v) => !v)}
+                className="flex items-center gap-1.5 text-stone-500 hover:text-stone-300 text-xs transition-colors"
+              >
+                <span>{showProgress ? "▾" : "▸"}</span>
+                <span>過去 12 週進度</span>
+              </button>
+              {showProgress && (
+                progressRecords.length < 2 ? (
+                  <p className="text-stone-600 text-xs text-center py-2">資料不足（需至少 2 筆）</p>
+                ) : (
+                  <div className="bg-stone-800/60 rounded-xl px-2 pt-2 pb-1">
+                    <ResponsiveContainer width="100%" height={120}>
+                      <LineChart data={progressRecords.map((r) => ({ date: r.date.slice(5), w: r.weightKg }))}>
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#78716c" }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: "#78716c" }} tickLine={false} axisLine={false} width={32} />
+                        <Tooltip
+                          contentStyle={{ background: "#1c1917", border: "1px solid #44403c", borderRadius: 8, fontSize: 12 }}
+                          formatter={(v: number | undefined) => [`${v ?? 0} kg`, "重量"]}
+                        />
+                        <Line type="monotone" dataKey="w" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3, fill: "#60a5fa" }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
               )}
 
               {/* Drop set 切換 */}

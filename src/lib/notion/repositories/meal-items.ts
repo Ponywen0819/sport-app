@@ -66,6 +66,19 @@ export class MealItemsRepository {
     return response.id;
   }
 
+  async update(id: string, data: { intake: number; calories: number; protein: number; fat: number; carbs: number }): Promise<void> {
+    await this.client.pages.update({
+      page_id: id,
+      properties: {
+        Intake: { number: data.intake },
+        Calories: { number: data.calories },
+        Protein: { number: data.protein },
+        Fat: { number: data.fat },
+        Carbs: { number: data.carbs },
+      } as Parameters<typeof this.client.pages.update>[0]["properties"],
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.client.pages.update({
       page_id: id,

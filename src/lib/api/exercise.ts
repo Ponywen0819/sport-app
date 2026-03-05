@@ -42,3 +42,11 @@ export function getLastExerciseRecord(exerciseName: string): Promise<ExerciseRec
 export function getPRExerciseRecord(exerciseName: string): Promise<ExerciseRecord | null> {
   return apiFetch(`/api/notion/exercise/records/pr?name=${encodeURIComponent(exerciseName)}`);
 }
+
+export function getExerciseProgress(exerciseName: string, weeks = 12): Promise<ExerciseRecord[]> {
+  return apiFetch(`/api/notion/exercise/records/progress?name=${encodeURIComponent(exerciseName)}&weeks=${weeks}`);
+}
+
+export function getWeeklyWorkoutSummary(from: string, to: string): Promise<import("@/app/api/notion/exercise/records/weekly-summary/route").DailyWorkoutSummary[]> {
+  return apiFetch(`/api/notion/exercise/records/weekly-summary?from=${from}&to=${to}`);
+}

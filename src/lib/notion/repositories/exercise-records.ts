@@ -68,6 +68,36 @@ export class ExerciseRecordsRepository {
     return exerciseRecordMapper.fromPage(results[0]);
   }
 
+  async getProgressByExercise(exerciseName: string, weeks: number): Promise<ExerciseRecord[]> {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - weeks * 7);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const response = await this.client.databases.query({
+      database_id: this.databaseId,
+      filter: {
+        and: [
+          { property: "ExerciseName", rich_text: { contains: exerciseName } },
+          { property: "Date", date: { on_or_after: fmt(from) } },
+          { property: "Date", date: { on_or_before: fmt(to) } },
+        ],
+      },
+      sorts: [{ property: "Date", direction: "ascending" }],
+    });
+
+    // Keep only the heaviest record per day
+    const byDay = new Map<string, ExerciseRecord>();
+    for (const page of response.results as PageObjectResponse[]) {
+      const record = exerciseRecordMapper.fromPage(page);
+      const existing = byDay.get(record.date);
+      if (!existing || record.weightKg > existing.weightKg) {
+        byDay.set(record.date, record);
+      }
+    }
+    return Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
   async create(data: CreateExerciseRecordInput): Promise<string> {
     const db = await this.client.databases.retrieve({ database_id: this.databaseId });
     const titleKey = Object.entries(db.properties).find(([, v]) => v.type === "title")?.[0] ?? "Name";

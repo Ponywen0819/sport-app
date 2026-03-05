@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DateSelector, type CalendarDate } from "@/components/date-selector";
 import { ExerciseTracker } from "./exercise-tracker";
+import { WeeklyWorkoutSummary } from "./weekly-workout-summary";
 import { getExerciseRecordDates } from "@/lib/api/exercise";
 
 const getTodayCalendarDate = (): CalendarDate => {
@@ -54,6 +55,9 @@ export const WorkoutsClient = () => {
             setDisplayMonth(m);
           }}
         />
+      </div>
+      <div className="px-4 pb-3">
+        <WeeklyWorkoutSummary />
       </div>
       <div className="px-4 pb-4">
         <ExerciseTracker date={date} />

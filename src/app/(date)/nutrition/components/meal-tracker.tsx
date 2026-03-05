@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import { CalendarDate } from "@/components/date-selector";
-import { getMealItems, addMealItem, removeMealItem, searchFoods, addFood } from "@/lib/api/nutrition";
+import { getMealItems, addMealItem, removeMealItem, updateMealItem, searchFoods, addFood } from "@/lib/api/nutrition";
 import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
 import type { Food } from "@/lib/notion/mappers/food-mapper";
-import { IoAdd, IoClose, IoTrash, IoArrowBack, IoTime } from "react-icons/io5";
+import { IoAdd, IoClose, IoTrash, IoArrowBack, IoTime, IoPencil } from "react-icons/io5";
 import { useRecentFoods } from "@/providers/recent-foods-provider";
 
 type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack";
@@ -33,6 +33,7 @@ const formatDate = (date: CalendarDate): string => {
 
 export const MealTracker = ({ mealType, date }: MealTrackerProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MealItem | null>(null);
   const queryClient = useQueryClient();
 
   const dateStr = formatDate(date);
@@ -83,6 +84,7 @@ export const MealTracker = ({ mealType, date }: MealTrackerProps) => {
             <MealItemRow
               key={item.id}
               item={item}
+              onEdit={() => setEditingItem(item)}
               onDelete={() => removeMutation.mutate(item.id)}
             />
           ))}
@@ -105,6 +107,16 @@ export const MealTracker = ({ mealType, date }: MealTrackerProps) => {
             }}
           />
         )}
+        {editingItem && (
+          <EditMealItemModal
+            item={editingItem}
+            onClose={() => setEditingItem(null)}
+            onEdited={() => {
+              queryClient.invalidateQueries({ queryKey });
+              queryClient.invalidateQueries({ queryKey: ["nutrition-overview", dateStr] });
+            }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
@@ -112,9 +124,11 @@ export const MealTracker = ({ mealType, date }: MealTrackerProps) => {
 
 const MealItemRow = ({
   item,
+  onEdit,
   onDelete,
 }: {
   item: MealItem;
+  onEdit: () => void;
   onDelete: () => void;
 }) => {
   return (
@@ -122,16 +136,104 @@ const MealItemRow = ({
       <div className="flex flex-col gap-0.5 min-w-0">
         <p className="text-stone-200 text-sm truncate">{item.foodName}</p>
         <p className="text-stone-500 text-xs">
-          {Math.round(item.calories)} kcal · P {Math.round(item.protein)}g · F {Math.round(item.fat)}g · C {Math.round(item.carbs)}g
+          {item.intake}g · {Math.round(item.calories)} kcal · P {Math.round(item.protein)}g · F {Math.round(item.fat)}g · C {Math.round(item.carbs)}g
         </p>
       </div>
-      <button
-        onClick={onDelete}
-        className="w-7 h-7 rounded-full text-stone-600 hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors flex-shrink-0 ml-2"
-      >
-        <IoTrash size={14} />
-      </button>
+      <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
+        <button
+          onClick={onEdit}
+          className="w-7 h-7 rounded-full text-stone-600 hover:text-blue-400 hover:bg-blue-400/10 flex items-center justify-center transition-colors"
+        >
+          <IoPencil size={13} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-7 h-7 rounded-full text-stone-600 hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors"
+        >
+          <IoTrash size={14} />
+        </button>
+      </div>
     </div>
+  );
+};
+
+const EditMealItemModal = ({
+  item,
+  onClose,
+  onEdited,
+}: {
+  item: MealItem;
+  onClose: () => void;
+  onEdited: () => void;
+}) => {
+  const [intake, setIntake] = useState(String(item.intake));
+
+  const updateMutation = useMutation({
+    mutationFn: () => {
+      const newIntake = parseFloat(intake) || 0;
+      if (newIntake <= 0) throw new Error("攝取量必須大於 0");
+      const ratio = newIntake / item.intake;
+      return updateMealItem(item.id, {
+        intake: newIntake,
+        calories: Math.round(item.calories * ratio * 10) / 10,
+        protein: Math.round(item.protein * ratio * 10) / 10,
+        fat: Math.round(item.fat * ratio * 10) / 10,
+        carbs: Math.round(item.carbs * ratio * 10) / 10,
+      });
+    },
+    onSuccess: () => {
+      onEdited();
+      onClose();
+    },
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/70 z-50 flex flex-col justify-end pb-16"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-stone-900 rounded-t-2xl max-w-md mx-auto w-full"
+      >
+        <div className="flex items-center justify-between px-4 py-4 border-b border-stone-800">
+          <h3 className="text-stone-100 font-semibold">修改分量</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center"
+          >
+            <IoClose size={18} className="text-stone-400" />
+          </button>
+        </div>
+        <div className="px-4 py-4 flex flex-col gap-3">
+          <p className="text-stone-300 text-sm font-medium">{item.foodName}</p>
+          <div className="flex flex-col gap-1">
+            <label className="text-stone-400 text-xs">攝取量 (g)</label>
+            <input
+              type="number"
+              value={intake}
+              onChange={(e) => setIntake(e.target.value)}
+              autoFocus
+              min="1"
+              className="bg-stone-800 border border-stone-700 rounded-xl px-4 py-3 text-stone-100 text-sm focus:outline-none focus:border-blue-500 w-full"
+            />
+          </div>
+          <button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending || (parseFloat(intake) || 0) <= 0}
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-stone-700 disabled:text-stone-500 text-white rounded-xl py-3 font-semibold text-sm transition-colors"
+          >
+            {updateMutation.isPending ? "更新中..." : "確認"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
@@ -358,27 +460,50 @@ const AddFoodModal = ({ mealType, date, onClose, onAdded }: AddFoodModalProps) =
               )}
             </div>
 
-            {selectedFood && (
-              <div className="px-4 py-3 border-t border-stone-800 flex-shrink-0 flex items-end gap-3">
-                <div className="flex-1 flex flex-col gap-1">
-                  <p className="text-stone-400 text-xs">攝取量 (g)</p>
-                  <input
-                    type="number"
-                    value={intake}
-                    onChange={(e) => setIntake(e.target.value)}
-                    className="bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-blue-500 w-full"
-                    min="1"
-                  />
+            {selectedFood && (() => {
+              const ratio = (parseFloat(intake) || 100) / (selectedFood.weight || 100);
+              const nutrients = [
+                { label: "蛋白質", value: selectedFood.protein, unit: "g" },
+                { label: "脂肪", value: selectedFood.fat, unit: "g" },
+                { label: "碳水", value: selectedFood.carbs, unit: "g" },
+                { label: "糖", value: selectedFood.sugar, unit: "g" },
+                { label: "膳食纖維", value: selectedFood.dietaryFiber, unit: "g" },
+                { label: "鈉", value: selectedFood.sodium, unit: "mg" },
+              ];
+              return (
+                <div className="px-4 pt-3 pb-4 border-t border-stone-800 flex-shrink-0 flex flex-col gap-2.5">
+                  <div className="grid grid-cols-3 gap-x-3 gap-y-2 bg-stone-800/60 rounded-xl px-3 py-2.5">
+                    {nutrients.map(({ label, value, unit }) => (
+                      <div key={label}>
+                        <p className="text-stone-500 text-xs">{label}</p>
+                        <p className="text-stone-200 text-xs font-medium">
+                          {Math.round((value ?? 0) * ratio * 10) / 10}{unit}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1 flex flex-col gap-1">
+                      <p className="text-stone-400 text-xs">攝取量 (g)</p>
+                      <input
+                        type="number"
+                        value={intake}
+                        onChange={(e) => setIntake(e.target.value)}
+                        className="bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-stone-100 text-sm focus:outline-none focus:border-blue-500 w-full"
+                        min="1"
+                      />
+                    </div>
+                    <button
+                      onClick={() => addMutation.mutate()}
+                      disabled={addMutation.isPending}
+                      className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:opacity-50 text-white rounded-xl px-5 py-2 font-medium text-sm transition-colors"
+                    >
+                      {addMutation.isPending ? "新增中..." : "新增"}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => addMutation.mutate()}
-                  disabled={addMutation.isPending}
-                  className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:opacity-50 text-white rounded-xl px-5 py-2 font-medium text-sm transition-colors"
-                >
-                  {addMutation.isPending ? "新增中..." : "新增"}
-                </button>
-              </div>
-            )}
+              );
+            })()}
           </>
         ) : (
           <>

@@ -31,6 +31,14 @@ export function removeMealItem(id: string): Promise<void> {
   return apiFetch(`/api/notion/nutrition/meals/${id}`, { method: "DELETE" });
 }
 
+export function updateMealItem(id: string, data: { intake: number; calories: number; protein: number; fat: number; carbs: number }): Promise<void> {
+  return apiFetch(`/api/notion/nutrition/meals/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 export function searchFoods(name?: string): Promise<Food[]> {
   const url = name
     ? `/api/notion/nutrition/foods?name=${encodeURIComponent(name)}`

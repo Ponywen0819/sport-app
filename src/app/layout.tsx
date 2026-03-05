@@ -5,6 +5,7 @@ import QueryProvider from "@/providers/query-provider";
 import { NotionStoreProvider } from "@/providers/notion-store-provider";
 import { NutritionGoalsProvider } from "@/providers/nutrition-goals-provider";
 import { RecentFoodsProvider } from "@/providers/recent-foods-provider";
+import { RecentExercisesProvider } from "@/providers/recent-exercises-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { SwipeNavigator } from "@/components/swipe-navigator";
 
@@ -50,6 +51,7 @@ export default function RootLayout({
         <NotionStoreProvider>
           <NutritionGoalsProvider>
             <RecentFoodsProvider>
+            <RecentExercisesProvider>
             <QueryProvider>
               <SwipeNavigator>
                 <main className="max-w-md mx-auto min-h-screen pb-16">
@@ -58,6 +60,7 @@ export default function RootLayout({
                 <BottomNav />
               </SwipeNavigator>
             </QueryProvider>
+            </RecentExercisesProvider>
             </RecentFoodsProvider>
           </NutritionGoalsProvider>
         </NotionStoreProvider>
