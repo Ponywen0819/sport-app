@@ -26,17 +26,12 @@ const getNumber = (prop: PageObjectResponse["properties"][string]): number => {
   return 0;
 };
 
-const getText = (prop: PageObjectResponse["properties"][string]): string => {
-  if (prop?.type === "title") return prop.title[0]?.plain_text ?? "";
-  if (prop?.type === "rich_text") return prop.rich_text[0]?.plain_text ?? "";
-  return "";
-};
-
 export const foodMapper = {
   fromPage: (page: PageObjectResponse): Food => {
     const p = page.properties;
     const titleProp = Object.values(p).find((v) => v.type === "title");
-    const name = titleProp?.type === "title" ? (titleProp.title[0]?.plain_text ?? "") : "";
+    const name =
+      titleProp?.type === "title" ? (titleProp.title[0]?.plain_text ?? "") : "";
     return {
       id: page.id,
       name,
@@ -63,17 +58,35 @@ export const foodMapper = {
       props.Name = { title: [{ text: { content: data.name } }] };
     }
     const numericFields: (keyof Omit<FoodProperties, "name">)[] = [
-      "weight", "calories", "protein", "fat", "transFat", "saturatedFat",
-      "monounsaturatedFat", "polyunsaturatedFat", "carbs", "sugar",
-      "dietaryFiber", "sodium", "potassium",
+      "weight",
+      "calories",
+      "protein",
+      "fat",
+      "transFat",
+      "saturatedFat",
+      "monounsaturatedFat",
+      "polyunsaturatedFat",
+      "carbs",
+      "sugar",
+      "dietaryFiber",
+      "sodium",
+      "potassium",
     ];
 
     const fieldMap: Record<string, string> = {
-      weight: "Weight", calories: "Calories", protein: "Protein", fat: "Fat",
-      transFat: "TransFat", saturatedFat: "SaturatedFat",
-      monounsaturatedFat: "MonounsaturatedFat", polyunsaturatedFat: "PolyunsaturatedFat",
-      carbs: "Carbs", sugar: "Sugar", dietaryFiber: "DietaryFiber",
-      sodium: "Sodium", potassium: "Potassium",
+      weight: "Weight",
+      calories: "Calories",
+      protein: "Protein",
+      fat: "Fat",
+      transFat: "TransFat",
+      saturatedFat: "SaturatedFat",
+      monounsaturatedFat: "MonounsaturatedFat",
+      polyunsaturatedFat: "PolyunsaturatedFat",
+      carbs: "Carbs",
+      sugar: "Sugar",
+      dietaryFiber: "DietaryFiber",
+      sodium: "Sodium",
+      potassium: "Potassium",
     };
 
     for (const field of numericFields) {
