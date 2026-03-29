@@ -47,19 +47,19 @@ Notion API
 
 All Notion calls are server-side (in API routes). Client components call `/api/notion/…` via fetch helpers in `src/lib/api/`:
 
-| Client helper | API route |
-|---|---|
-| `src/lib/api/exercise.ts` | `src/app/api/notion/exercise/…` |
+| Client helper              | API route                        |
+| -------------------------- | -------------------------------- |
+| `src/lib/api/exercise.ts`  | `src/app/api/notion/exercise/…`  |
 | `src/lib/api/nutrition.ts` | `src/app/api/notion/nutrition/…` |
 
 `src/app/api/notion/_config.ts` contains shared helpers (`getExerciseConfig()`, `getNutritionConfig()`) that read cookies and return `null` → 401 when not configured.
 
 ### State management
 
-| Store | Location | Persisted to |
-|---|---|---|
+| Store           | Location                     | Persisted to           |
+| --------------- | ---------------------------- | ---------------------- |
 | Notion settings | `src/stores/notion-store.ts` | localStorage + cookies |
-| Selected date | `src/stores/date-store.ts` | cookies |
+| Selected date   | `src/stores/date-store.ts`   | cookies                |
 
 Both use Zustand `createStore` (vanilla) wrapped in React context providers (`src/providers/`).
 
@@ -72,3 +72,5 @@ Both use Zustand `createStore` (vanilla) wrapped in React context providers (`sr
 - **@notionhq/client must stay on v2.x** — v5 changed `databases.query` to `dataSources.query`, which breaks all repositories.
 - **`output: "standalone"`** is set in `next.config.ts` for the Docker build. The standalone server reads the `PORT` env var at runtime.
 - PWA service worker is disabled in development (`NODE_ENV === "development"`).
+
+shit
