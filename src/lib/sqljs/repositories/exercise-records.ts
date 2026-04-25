@@ -1,7 +1,7 @@
-import type { Database } from "sql.js";
+import type { Database } from "@sqlite.org/sqlite-wasm";
 import type { ExerciseRecord } from "@/lib/notion/mappers/exercise-record-mapper";
 
-type Row = { [key: string]: number | string | Uint8Array | null };
+type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 
 function rowToRecord(row: Row): ExerciseRecord {
   return {
@@ -9,11 +9,11 @@ function rowToRecord(row: Row): ExerciseRecord {
     exerciseName: row.exercise_name as string,
     exerciseId: (row.exercise_id as string | null) ?? null,
     date: row.date as string,
-    weightKg: (row.weight_kg as number) ?? 0,
-    reps: (row.reps as number) ?? 0,
-    sets: (row.sets as number) ?? 1,
-    dropWeightKg: (row.drop_weight_kg as number | null) ?? null,
-    dropReps: (row.drop_reps as number | null) ?? null,
+    weightKg: Number(row.weight_kg) ?? 0,
+    reps: Number(row.reps) ?? 0,
+    sets: Number(row.sets) ?? 1,
+    dropWeightKg: row.drop_weight_kg != null ? Number(row.drop_weight_kg) : null,
+    dropReps: row.drop_reps != null ? Number(row.drop_reps) : null,
   };
 }
 
@@ -26,19 +26,21 @@ export const exerciseRecordsLocalRepo = {
         (:id, :exercise_name, :exercise_id, :date, :weight_kg, :reps, :sets, :drop_weight_kg, :drop_reps)
     `);
     for (const r of records) {
-      stmt.run({
-        ":id": r.id,
-        ":exercise_name": r.exerciseName,
-        ":exercise_id": r.exerciseId ?? null,
-        ":date": r.date,
-        ":weight_kg": r.weightKg,
-        ":reps": r.reps,
-        ":sets": r.sets,
-        ":drop_weight_kg": r.dropWeightKg ?? null,
-        ":drop_reps": r.dropReps ?? null,
-      });
+      stmt
+        .bind({
+          ":id": r.id,
+          ":exercise_name": r.exerciseName,
+          ":exercise_id": r.exerciseId ?? null,
+          ":date": r.date,
+          ":weight_kg": r.weightKg,
+          ":reps": r.reps,
+          ":sets": r.sets,
+          ":drop_weight_kg": r.dropWeightKg ?? null,
+          ":drop_reps": r.dropReps ?? null,
+        })
+        .stepReset();
     }
-    stmt.free();
+    stmt.finalize();
   },
 
   upsert(db: Database, record: ExerciseRecord): void {
@@ -46,7 +48,7 @@ export const exerciseRecordsLocalRepo = {
   },
 
   delete(db: Database, id: string): void {
-    db.run("DELETE FROM exercise_records WHERE id = :id", { ":id": id });
+    db.exec({ sql: "DELETE FROM exercise_records WHERE id = ?", bind: [id] });
   },
 
   getByDate(db: Database, date: string): ExerciseRecord[] {
@@ -55,8 +57,8 @@ export const exerciseRecordsLocalRepo = {
     );
     stmt.bind({ ":date": date });
     const rows: ExerciseRecord[] = [];
-    while (stmt.step()) rows.push(rowToRecord(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToRecord(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
@@ -70,8 +72,8 @@ export const exerciseRecordsLocalRepo = {
     );
     stmt.bind({ ":start": startDate, ":end": endDate });
     const rows: ExerciseRecord[] = [];
-    while (stmt.step()) rows.push(rowToRecord(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToRecord(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
@@ -85,8 +87,8 @@ export const exerciseRecordsLocalRepo = {
     );
     stmt.bind({ ":start": startDate, ":end": endDate });
     const dates: string[] = [];
-    while (stmt.step()) dates.push((stmt.getAsObject() as Row).date as string);
-    stmt.free();
+    while (stmt.step()) dates.push((stmt.get({}) as Row).date as string);
+    stmt.finalize();
     return dates;
   },
 
@@ -99,11 +101,11 @@ export const exerciseRecordsLocalRepo = {
     );
     stmt.bind({ ":name": exerciseName });
     if (stmt.step()) {
-      const row = rowToRecord(stmt.getAsObject() as Row);
-      stmt.free();
+      const row = rowToRecord(stmt.get({}) as Row);
+      stmt.finalize();
       return row;
     }
-    stmt.free();
+    stmt.finalize();
     return null;
   },
 
@@ -113,11 +115,11 @@ export const exerciseRecordsLocalRepo = {
     );
     stmt.bind({ ":name": exerciseName });
     if (stmt.step()) {
-      const row = rowToRecord(stmt.getAsObject() as Row);
-      stmt.free();
+      const row = rowToRecord(stmt.get({}) as Row);
+      stmt.finalize();
       return row;
     }
-    stmt.free();
+    stmt.finalize();
     return null;
   },
 
@@ -126,16 +128,16 @@ export const exerciseRecordsLocalRepo = {
       "SELECT * FROM exercise_records ORDER BY date DESC"
     );
     const rows: ExerciseRecord[] = [];
-    while (stmt.step()) rows.push(rowToRecord(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToRecord(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
   count(db: Database): number {
     const stmt = db.prepare("SELECT COUNT(*) as cnt FROM exercise_records");
     stmt.step();
-    const cnt = (stmt.getAsObject() as Row).cnt as number;
-    stmt.free();
+    const cnt = Number((stmt.get({}) as Row).cnt);
+    stmt.finalize();
     return cnt;
   },
 };

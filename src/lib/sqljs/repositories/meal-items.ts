@@ -1,7 +1,7 @@
-import type { Database } from "sql.js";
+import type { Database } from "@sqlite.org/sqlite-wasm";
 import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
 
-type Row = { [key: string]: number | string | Uint8Array | null };
+type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 
 function rowToMealItem(row: Row): MealItem {
   return {
@@ -10,11 +10,11 @@ function rowToMealItem(row: Row): MealItem {
     mealType: row.meal_type as MealItem["mealType"],
     foodId: row.food_id as string,
     foodName: row.food_name as string,
-    intake: (row.intake as number) ?? 0,
-    calories: (row.calories as number) ?? 0,
-    protein: (row.protein as number) ?? 0,
-    fat: (row.fat as number) ?? 0,
-    carbs: (row.carbs as number) ?? 0,
+    intake: Number(row.intake) ?? 0,
+    calories: Number(row.calories) ?? 0,
+    protein: Number(row.protein) ?? 0,
+    fat: Number(row.fat) ?? 0,
+    carbs: Number(row.carbs) ?? 0,
   };
 }
 
@@ -27,20 +27,22 @@ export const mealItemsLocalRepo = {
         (:id, :date, :meal_type, :food_id, :food_name, :intake, :calories, :protein, :fat, :carbs)
     `);
     for (const item of items) {
-      stmt.run({
-        ":id": item.id,
-        ":date": item.date,
-        ":meal_type": item.mealType,
-        ":food_id": item.foodId,
-        ":food_name": item.foodName,
-        ":intake": item.intake,
-        ":calories": item.calories,
-        ":protein": item.protein,
-        ":fat": item.fat,
-        ":carbs": item.carbs,
-      });
+      stmt
+        .bind({
+          ":id": item.id,
+          ":date": item.date,
+          ":meal_type": item.mealType,
+          ":food_id": item.foodId,
+          ":food_name": item.foodName,
+          ":intake": item.intake,
+          ":calories": item.calories,
+          ":protein": item.protein,
+          ":fat": item.fat,
+          ":carbs": item.carbs,
+        })
+        .stepReset();
     }
-    stmt.free();
+    stmt.finalize();
   },
 
   upsert(db: Database, item: MealItem): void {
@@ -48,7 +50,7 @@ export const mealItemsLocalRepo = {
   },
 
   delete(db: Database, id: string): void {
-    db.run("DELETE FROM meal_items WHERE id = :id", { ":id": id });
+    db.exec({ sql: "DELETE FROM meal_items WHERE id = ?", bind: [id] });
   },
 
   update(
@@ -56,19 +58,12 @@ export const mealItemsLocalRepo = {
     id: string,
     data: Pick<MealItem, "intake" | "calories" | "protein" | "fat" | "carbs">
   ): void {
-    db.run(
-      `UPDATE meal_items
-       SET intake = :intake, calories = :calories, protein = :protein, fat = :fat, carbs = :carbs
-       WHERE id = :id`,
-      {
-        ":id": id,
-        ":intake": data.intake,
-        ":calories": data.calories,
-        ":protein": data.protein,
-        ":fat": data.fat,
-        ":carbs": data.carbs,
-      }
-    );
+    db.exec({
+      sql: `UPDATE meal_items
+            SET intake = ?, calories = ?, protein = ?, fat = ?, carbs = ?
+            WHERE id = ?`,
+      bind: [data.intake, data.calories, data.protein, data.fat, data.carbs, id],
+    });
   },
 
   getByDate(db: Database, date: string): MealItem[] {
@@ -77,8 +72,8 @@ export const mealItemsLocalRepo = {
     );
     stmt.bind({ ":date": date });
     const rows: MealItem[] = [];
-    while (stmt.step()) rows.push(rowToMealItem(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToMealItem(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
@@ -92,8 +87,8 @@ export const mealItemsLocalRepo = {
     );
     stmt.bind({ ":date": date, ":meal_type": mealType });
     const rows: MealItem[] = [];
-    while (stmt.step()) rows.push(rowToMealItem(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToMealItem(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
@@ -103,16 +98,16 @@ export const mealItemsLocalRepo = {
     );
     stmt.bind({ ":from": from, ":to": to });
     const rows: MealItem[] = [];
-    while (stmt.step()) rows.push(rowToMealItem(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToMealItem(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
   count(db: Database): number {
     const stmt = db.prepare("SELECT COUNT(*) as cnt FROM meal_items");
     stmt.step();
-    const cnt = (stmt.getAsObject() as Row).cnt as number;
-    stmt.free();
+    const cnt = Number((stmt.get({}) as Row).cnt);
+    stmt.finalize();
     return cnt;
   },
 };

@@ -1,7 +1,7 @@
-import type { Database } from "sql.js";
+import type { Database } from "@sqlite.org/sqlite-wasm";
 import type { Exercise } from "@/lib/notion/mappers/exercise-mapper";
 
-type Row = { [key: string]: number | string | Uint8Array | null };
+type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 
 function rowToExercise(row: Row): Exercise {
   return {
@@ -21,14 +21,16 @@ export const exercisesLocalRepo = {
       VALUES (:id, :name, :equipment, :muscle_groups)
     `);
     for (const e of exercises) {
-      stmt.run({
-        ":id": e.id,
-        ":name": e.name,
-        ":equipment": e.equipment ?? null,
-        ":muscle_groups": JSON.stringify(e.muscleGroups),
-      });
+      stmt
+        .bind({
+          ":id": e.id,
+          ":name": e.name,
+          ":equipment": e.equipment ?? null,
+          ":muscle_groups": JSON.stringify(e.muscleGroups),
+        })
+        .stepReset();
     }
-    stmt.free();
+    stmt.finalize();
   },
 
   search(db: Database, name?: string): Exercise[] {
@@ -38,8 +40,8 @@ export const exercisesLocalRepo = {
     const stmt = db.prepare(sql);
     if (name) stmt.bind({ ":name": `%${name}%` });
     const rows: Exercise[] = [];
-    while (stmt.step()) rows.push(rowToExercise(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToExercise(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
@@ -47,19 +49,19 @@ export const exercisesLocalRepo = {
     const stmt = db.prepare("SELECT * FROM exercises WHERE id = :id");
     stmt.bind({ ":id": id });
     if (stmt.step()) {
-      const row = rowToExercise(stmt.getAsObject() as Row);
-      stmt.free();
+      const row = rowToExercise(stmt.get({}) as Row);
+      stmt.finalize();
       return row;
     }
-    stmt.free();
+    stmt.finalize();
     return null;
   },
 
   count(db: Database): number {
     const stmt = db.prepare("SELECT COUNT(*) as cnt FROM exercises");
     stmt.step();
-    const cnt = (stmt.getAsObject() as Row).cnt as number;
-    stmt.free();
+    const cnt = Number((stmt.get({}) as Row).cnt);
+    stmt.finalize();
     return cnt;
   },
 };

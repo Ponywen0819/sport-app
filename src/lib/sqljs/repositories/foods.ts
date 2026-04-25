@@ -1,27 +1,27 @@
-import type { Database } from "sql.js";
+import type { Database } from "@sqlite.org/sqlite-wasm";
 import type { Food } from "@/lib/notion/mappers/food-mapper";
 
-type Row = { [key: string]: number | string | Uint8Array | null };
+type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 
 function rowToFood(row: Row): Food {
   return {
     id: row.id as string,
     name: row.name as string,
-    weight: (row.weight as number) ?? 0,
-    calories: (row.calories as number) ?? 0,
-    protein: (row.protein as number) ?? 0,
-    fat: (row.fat as number) ?? 0,
-    transFat: (row.trans_fat as number | null) ?? undefined,
-    saturatedFat: (row.saturated_fat as number | null) ?? undefined,
+    weight: Number(row.weight) ?? 0,
+    calories: Number(row.calories) ?? 0,
+    protein: Number(row.protein) ?? 0,
+    fat: Number(row.fat) ?? 0,
+    transFat: row.trans_fat != null ? Number(row.trans_fat) : undefined,
+    saturatedFat: row.saturated_fat != null ? Number(row.saturated_fat) : undefined,
     monounsaturatedFat:
-      (row.monounsaturated_fat as number | null) ?? undefined,
+      row.monounsaturated_fat != null ? Number(row.monounsaturated_fat) : undefined,
     polyunsaturatedFat:
-      (row.polyunsaturated_fat as number | null) ?? undefined,
-    carbs: (row.carbs as number) ?? 0,
-    sugar: (row.sugar as number | null) ?? undefined,
-    dietaryFiber: (row.dietary_fiber as number | null) ?? undefined,
-    sodium: (row.sodium as number | null) ?? undefined,
-    potassium: (row.potassium as number | null) ?? undefined,
+      row.polyunsaturated_fat != null ? Number(row.polyunsaturated_fat) : undefined,
+    carbs: Number(row.carbs) ?? 0,
+    sugar: row.sugar != null ? Number(row.sugar) : undefined,
+    dietaryFiber: row.dietary_fiber != null ? Number(row.dietary_fiber) : undefined,
+    sodium: row.sodium != null ? Number(row.sodium) : undefined,
+    potassium: row.potassium != null ? Number(row.potassium) : undefined,
   };
 }
 
@@ -38,25 +38,27 @@ export const foodsLocalRepo = {
          :carbs, :sugar, :dietary_fiber, :sodium, :potassium)
     `);
     for (const f of foods) {
-      stmt.run({
-        ":id": f.id,
-        ":name": f.name,
-        ":weight": f.weight,
-        ":calories": f.calories,
-        ":protein": f.protein,
-        ":fat": f.fat,
-        ":trans_fat": f.transFat ?? null,
-        ":saturated_fat": f.saturatedFat ?? null,
-        ":monounsaturated_fat": f.monounsaturatedFat ?? null,
-        ":polyunsaturated_fat": f.polyunsaturatedFat ?? null,
-        ":carbs": f.carbs,
-        ":sugar": f.sugar ?? null,
-        ":dietary_fiber": f.dietaryFiber ?? null,
-        ":sodium": f.sodium ?? null,
-        ":potassium": f.potassium ?? null,
-      });
+      stmt
+        .bind({
+          ":id": f.id,
+          ":name": f.name,
+          ":weight": f.weight,
+          ":calories": f.calories,
+          ":protein": f.protein,
+          ":fat": f.fat,
+          ":trans_fat": f.transFat ?? null,
+          ":saturated_fat": f.saturatedFat ?? null,
+          ":monounsaturated_fat": f.monounsaturatedFat ?? null,
+          ":polyunsaturated_fat": f.polyunsaturatedFat ?? null,
+          ":carbs": f.carbs,
+          ":sugar": f.sugar ?? null,
+          ":dietary_fiber": f.dietaryFiber ?? null,
+          ":sodium": f.sodium ?? null,
+          ":potassium": f.potassium ?? null,
+        })
+        .stepReset();
     }
-    stmt.free();
+    stmt.finalize();
   },
 
   upsert(db: Database, food: Food): void {
@@ -64,7 +66,7 @@ export const foodsLocalRepo = {
   },
 
   delete(db: Database, id: string): void {
-    db.run("DELETE FROM foods WHERE id = :id", { ":id": id });
+    db.exec({ sql: "DELETE FROM foods WHERE id = ?", bind: [id] });
   },
 
   search(db: Database, name?: string): Food[] {
@@ -74,8 +76,8 @@ export const foodsLocalRepo = {
     const stmt = db.prepare(sql);
     if (name) stmt.bind({ ":name": `%${name}%` });
     const rows: Food[] = [];
-    while (stmt.step()) rows.push(rowToFood(stmt.getAsObject() as Row));
-    stmt.free();
+    while (stmt.step()) rows.push(rowToFood(stmt.get({}) as Row));
+    stmt.finalize();
     return rows;
   },
 
@@ -83,19 +85,19 @@ export const foodsLocalRepo = {
     const stmt = db.prepare("SELECT * FROM foods WHERE id = :id");
     stmt.bind({ ":id": id });
     if (stmt.step()) {
-      const row = rowToFood(stmt.getAsObject() as Row);
-      stmt.free();
+      const row = rowToFood(stmt.get({}) as Row);
+      stmt.finalize();
       return row;
     }
-    stmt.free();
+    stmt.finalize();
     return null;
   },
 
   count(db: Database): number {
     const stmt = db.prepare("SELECT COUNT(*) as cnt FROM foods");
     stmt.step();
-    const cnt = (stmt.getAsObject() as Row).cnt as number;
-    stmt.free();
+    const cnt = Number((stmt.get({}) as Row).cnt);
+    stmt.finalize();
     return cnt;
   },
 };

@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { Database } from "sql.js";
+import type { Database } from "@sqlite.org/sqlite-wasm";
 import {
   getDatabase,
   persistDatabase,
