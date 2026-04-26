@@ -5,70 +5,157 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Development
-node_modules/.bin/pnpm dev          # Start dev server (Turbopack)
-node_modules/.bin/pnpm build        # Production build
+# Development (Next.js 15 with Turbopack)
+node_modules/.bin/pnpm dev          # Start dev server
+node_modules/.bin/pnpm build        # Production build (output: standalone)
 node_modules/.bin/pnpm start        # Start production server
-node_modules/.bin/pnpm lint         # Run ESLint
+node_modules/.bin/pnpm lint         # Run ESLint (next lint)
 
-# Docker
+# Docker (uses .next/standalone output)
 docker build -t sport-app .
 docker run -e PORT=3000 -p 3000:3000 sport-app
 
-# Icon generation
+# PWA icons
 node scripts/generate-icons.mjs
 ```
 
 > `pnpm` is not in PATH — always use `node_modules/.bin/pnpm`.
+> No test runner is configured. There is no `test` script.
+> Node version: 20 (`.nvmrc`).
+
+The `scripts/*.js` Notion bootstrap helpers (`setup-exercises-db.js`,
+`migrate-*.js`, etc.) are one-off Node scripts run with
+`node --env-file=.env.local scripts/<file>.js` against a `NOTION_TOKEN` and a
+`NOTION_ROOT_PAGE_ID`. They are not invoked by the app at runtime.
 
 ## Architecture
 
-**No backend database.** All data lives in the user's own Notion workspace. The app uses Notion as both auth provider (OAuth) and database.
+This is a personal PWA for tracking nutrition, workouts, and body composition.
+The app is **Notion-backed**: there is no application database. The user supplies
+their own Notion API token + 5 database IDs and all data is read/written against
+their workspace.
 
-### Settings flow
+### Settings → cookies → API routes
 
-Notion credentials (token + 5 DB IDs) are entered by the user on `/profile`, stored in **localStorage** via Zustand, and **synced to cookies** so server-side code (API routes) can read them. There is no `.env` dependency for Notion credentials at runtime.
+Notion credentials are entered on `/profile/notion-settings` (the form lives in
+`src/app/profile/components/notion-settings-form.tsx`). The flow:
 
-Cookie names: `notion_token`, `notion_foods_db_id`, `notion_meal_items_db_id`, `notion_exercise_records_db_id`, `notion_exercises_db_id`, `notion_body_indexes_db_id`.
+1. Form writes to the Zustand `notion-store` (`src/stores/notion-store.ts`).
+2. `setSettings()` persists to `localStorage` **and** mirrors values to cookies
+   via `syncNotionCookies()` so server code can see them.
+3. Server-side helpers in `src/app/api/notion/_config.ts`
+   (`getNutritionConfig`, `getExerciseConfig`, `getExercisesConfig`,
+   `getBodyIndexConfig`) read those cookies and return `null` → the route
+   returns 401 via `notConfigured()`.
+4. Server pages (`/nutrition`, `/workouts`, `/profile/body-index`) check the
+   relevant cookies in their server component and render `<NotConfigured />`
+   when missing instead of mounting the client tree.
 
-Pages check for required cookies on the server and render `<NotConfigured />` when missing.
+Cookie names (all set with 1-year expiry):
+`notion_token`, `notion_foods_db_id`, `notion_meal_items_db_id`,
+`notion_exercise_records_db_id`, `notion_exercises_db_id`,
+`notion_body_indexes_db_id`.
 
-### Data layer
+`POST /api/notion/validate` accepts the full settings object and returns a
+boolean per cookie — used by the settings form's "test connection" button.
+
+### Notion data layer
 
 ```
-Notion API
-  └── src/lib/notion/
-        ├── client.ts          # Creates NotionClient from token
-        ├── repositories/      # One file per Notion DB (query/create/delete)
-        └── mappers/           # Convert Notion page objects ↔ TypeScript types
+src/lib/notion/
+  ├── client.ts          # createNotionClient(token) → @notionhq/client v2 Client
+  ├── setup.ts           # Schema definitions + checkDatabaseSchema /
+  │                      # migrateDatabaseSchema / setupNotionDatabases
+  ├── repositories/      # One class per DB (FoodsRepository, MealItemsRepository,
+  │                      # ExerciseRecordsRepository, ExercisesRepository,
+  │                      # BodyIndexesRepository) — all CRUD via databases.query /
+  │                      # pages.create / pages.update({archived: true})
+  └── mappers/           # *Mapper.fromPage(page) → typed object
+                         # *Mapper.toProperties(data) → Notion property payload
 ```
 
-### API routes → client fetch
+Repositories accept `(client, databaseId)` in the constructor. The title
+property name is **detected at runtime** (see `FoodsRepository.search`) because
+users may rename it; do the same when introducing a new repo that writes to a
+title field.
 
-All Notion calls are server-side (in API routes). Client components call `/api/notion/…` via fetch helpers in `src/lib/api/`:
+Schemas in `setup.ts` are the source of truth for required Notion DB columns.
+Two pages render a "schema gate" client component that calls
+`GET /api/notion/.../schema` (returns missing properties), blocks rendering of
+its children when columns are missing, and offers one-click `POST` migration:
+- Nutrition: `src/app/(date)/nutrition/components/schema-mismatch-banner.tsx`
+  → `/api/notion/nutrition/schema`
+- Body index: `src/app/profile/body-index/components/schema-gate.tsx`
+  → `/api/notion/body-index/schema`
 
-| Client helper | API route |
-|---|---|
-| `src/lib/api/exercise.ts` | `src/app/api/notion/exercise/…` |
-| `src/lib/api/nutrition.ts` | `src/app/api/notion/nutrition/…` |
+When you add a property to a Notion DB schema, also wire it into the
+corresponding `*-mapper.ts` (both `fromPage` and `toProperties`) and add it to
+the schema gate's expected columns.
 
-`src/app/api/notion/_config.ts` contains shared helpers (`getExerciseConfig()`, `getNutritionConfig()`) that read cookies and return `null` → 401 when not configured.
+### API routes ↔ client fetchers
+
+All Notion calls are server-side (under `src/app/api/notion/...`). Client
+components never import `@notionhq/client`; they call typed fetch helpers in
+`src/lib/api/`:
+
+| Helper                     | API route prefix                |
+| -------------------------- | ------------------------------- |
+| `src/lib/api/exercise.ts`  | `/api/notion/exercise/...`      |
+| `src/lib/api/nutrition.ts` | `/api/notion/nutrition/...`     |
+| `src/lib/api/body-index.ts`| `/api/notion/body-index/...`    |
+
+When adding an endpoint, update both the API route and the matching helper —
+client code should never call `fetch` against `/api/notion/...` directly.
 
 ### State management
 
-| Store | Location | Persisted to |
-|---|---|---|
-| Notion settings | `src/stores/notion-store.ts` | localStorage + cookies |
-| Selected date | `src/stores/date-store.ts` | cookies |
+Four Zustand stores (vanilla `createStore`, each wrapped in a React context
+provider so the store can be created lazily on the client):
 
-Both use Zustand `createStore` (vanilla) wrapped in React context providers (`src/providers/`).
+| Store                                    | Provider                                      | Persistence |
+| ---------------------------------------- | --------------------------------------------- | ----------- |
+| `notion-store.ts` (settings)             | `notion-store-provider.tsx`                   | localStorage + cookies |
+| `nutrition-goals-store.ts`               | `nutrition-goals-provider.tsx`                | localStorage |
+| `recent-foods-store.ts` (last 10)        | `recent-foods-provider.tsx`                   | localStorage |
+| `recent-exercises-store.ts`              | `recent-exercises-provider.tsx`               | localStorage |
 
-### Route groups
+All four providers are mounted in `src/app/layout.tsx`. The notion-store
+provider also rehydrates from `localStorage` on mount and re-syncs cookies, so
+returning users don't need to re-enter credentials.
 
-- `(date)/` — wraps `/nutrition` with `DateStore` context; all pages in this group share the currently selected date.
+The currently selected date is **not** in a global store — it's local
+`useState<CalendarDate>` inside each page's client component (e.g.
+`NutritionClient`, `WorkoutsClient`). The `(date)/` route group's `layout.tsx`
+is currently a passthrough; no date context is provided.
 
-### Key constraints
+### React Query
 
-- **@notionhq/client must stay on v2.x** — v5 changed `databases.query` to `dataSources.query`, which breaks all repositories.
-- **`output: "standalone"`** is set in `next.config.ts` for the Docker build. The standalone server reads the `PORT` env var at runtime.
-- PWA service worker is disabled in development (`NODE_ENV === "development"`).
+`src/providers/query-provider.tsx` configures a single `QueryClient` with
+`staleTime: 5min`, `gcTime: 15min`, `refetchOnWindowFocus: false`,
+`refetchOnReconnect: false` — tuned for a personal app where the only writer is
+the user themselves. After mutations, invalidate by query key prefix
+(e.g. `["body-index"]`).
+
+### Navigation
+
+- `BottomNav` (4 tabs: `/`, `/workouts`, `/nutrition`, `/profile`) is rendered
+  globally in `layout.tsx`.
+- `SwipeNavigator` listens for horizontal touch swipes (≥72px, vertical drift
+  <50px) and navigates between the same 4 tabs in order.
+
+## Key constraints
+
+- **`@notionhq/client` must stay on v2.x.** v3+ replaced `databases.query` with
+  `dataSources.query`; every repository would break.
+- **`output: "standalone"`** is set in `next.config.ts` so the Docker image can
+  ship `.next/standalone/server.js`. The standalone server reads `PORT` at
+  runtime.
+- **Serwist (PWA) is production-only.** `next.config.ts` only wraps the config
+  with `withSerwistInit` when `NODE_ENV === "production"`. The service worker
+  source is `src/app/sw.ts`; the build emits `public/sw.js` (gitignored).
+- **`prisma/`** (sqlite + `schema.prisma`) is a leftover from an earlier
+  database-backed version and is not used by the running app. Don't add new
+  Prisma code; if you find a runtime reference, it's a bug.
+- **Path alias:** `@/*` → `./src/*` (see `tsconfig.json`).
+- **Locale:** UI strings are Traditional Chinese (`zh-TW`); the time helpers in
+  `src/utils/time.ts` default to `Asia/Taipei`.
