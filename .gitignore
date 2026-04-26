@@ -49,3 +49,6 @@ public/swe-worker*.js
 prisma/dev.db
 
 .idea/
+
+playwright-report/
+test-results/

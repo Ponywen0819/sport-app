@@ -37,13 +37,17 @@ test.describe("底部導航列", () => {
 
   test("在 /workouts 時運動導航項目為啟用狀態（藍色）", async ({ page }) => {
     await page.goto("/workouts");
-    const workoutsLink = page.locator("nav").getByRole("link", { name: "運動" });
+    const workoutsLink = page
+      .locator("nav")
+      .getByRole("link", { name: "運動" });
     await expect(workoutsLink).toHaveClass(/text-blue-400/);
   });
 
   test("在 /nutrition 時營養導航項目為啟用狀態（藍色）", async ({ page }) => {
     await page.goto("/nutrition");
-    const nutritionLink = page.locator("nav").getByRole("link", { name: "營養" });
+    const nutritionLink = page
+      .locator("nav")
+      .getByRole("link", { name: "營養" });
     await expect(nutritionLink).toHaveClass(/text-blue-400/);
   });
 
