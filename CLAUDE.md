@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development (Next.js 15 with Turbopack)
-node_modules/.bin/pnpm dev          # Start dev server
-node_modules/.bin/pnpm build        # Production build (output: standalone)
-node_modules/.bin/pnpm start        # Start production server
-node_modules/.bin/pnpm lint         # Run ESLint (next lint)
+npm run dev          # Start dev server
+npm run build        # Production build (output: standalone)
+npm run start        # Start production server
+npm run lint         # Run ESLint (next lint)
 
 # Docker (uses .next/standalone output)
 docker build -t sport-app .
@@ -19,7 +19,7 @@ docker run -e PORT=3000 -p 3000:3000 sport-app
 node scripts/generate-icons.mjs
 ```
 
-> `pnpm` is not in PATH — always use `node_modules/.bin/pnpm`.
+> Use `npm` (the lockfile is `package-lock.json`). The Dockerfile uses `npm ci`.
 > No test runner is configured. There is no `test` script.
 > Node version: 20 (`.nvmrc`).
 
