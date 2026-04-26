@@ -21,7 +21,7 @@ node scripts/generate-icons.mjs
 
 > Use `npm` (the lockfile is `package-lock.json`). The Dockerfile uses `npm ci`.
 > No test runner is configured. There is no `test` script.
-> Node version: 20 (`.nvmrc`).
+> Node version: 22 (`.nvmrc`); the Dockerfile also pins `node:22-alpine`.
 
 The `scripts/*.js` Notion bootstrap helpers (`setup-exercises-db.js`,
 `migrate-*.js`, etc.) are one-off Node scripts run with
