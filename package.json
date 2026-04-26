@@ -10,11 +10,13 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "postinstall": "cp node_modules/@sqlite.org/sqlite-wasm/dist/sqlite3.wasm public/sqlite3.wasm"
   },
   "dependencies": {
     "@notionhq/client": "^2.3.0",
     "@serwist/next": "^9.5.6",
+    "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "@tailwindcss/postcss": "^4.0.9",
     "@tanstack/react-query": "^5.66.7",
     "js-cookie": "^3.0.5",

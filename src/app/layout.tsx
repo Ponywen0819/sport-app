@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/query-provider";
 import { NotionStoreProvider } from "@/providers/notion-store-provider";
+import { SqlJsProvider } from "@/providers/sql-provider";
 import { NutritionGoalsProvider } from "@/providers/nutrition-goals-provider";
 import { RecentFoodsProvider } from "@/providers/recent-foods-provider";
 import { RecentExercisesProvider } from "@/providers/recent-exercises-provider";
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-stone-900 text-stone-100`}
       >
+        <SqlJsProvider>
         <NotionStoreProvider>
           <NutritionGoalsProvider>
             <RecentFoodsProvider>
@@ -64,6 +66,7 @@ export default function RootLayout({
             </RecentFoodsProvider>
           </NutritionGoalsProvider>
         </NotionStoreProvider>
+        </SqlJsProvider>
       </body>
     </html>
   );
