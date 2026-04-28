@@ -3,6 +3,21 @@ import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
 
 type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 
+export type NutritionOverview = {
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+};
+
+export type DailySummary = {
+  date: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+};
+
 function rowToMealItem(row: Row): MealItem {
   return {
     id: row.id as string,
@@ -109,5 +124,58 @@ export const mealItemsLocalRepo = {
     const cnt = Number((stmt.get({}) as Row).cnt);
     stmt.finalize();
     return cnt;
+  },
+
+  getOverviewByDate(db: Database, date: string): NutritionOverview {
+    const stmt = db.prepare(
+      `SELECT COALESCE(SUM(calories), 0) AS calories,
+              COALESCE(SUM(protein),  0) AS protein,
+              COALESCE(SUM(fat),      0) AS fat,
+              COALESCE(SUM(carbs),    0) AS carbs
+       FROM meal_items
+       WHERE date = :date`
+    );
+    stmt.bind({ ":date": date });
+    stmt.step();
+    const row = stmt.get({}) as Row;
+    stmt.finalize();
+    return {
+      calories: Number(row.calories) || 0,
+      protein: Number(row.protein) || 0,
+      fat: Number(row.fat) || 0,
+      carbs: Number(row.carbs) || 0,
+    };
+  },
+
+  getDailySummaryByRange(
+    db: Database,
+    from: string,
+    to: string
+  ): DailySummary[] {
+    const stmt = db.prepare(
+      `SELECT date,
+              COALESCE(SUM(calories), 0) AS calories,
+              COALESCE(SUM(protein),  0) AS protein,
+              COALESCE(SUM(fat),      0) AS fat,
+              COALESCE(SUM(carbs),    0) AS carbs
+       FROM meal_items
+       WHERE date >= :from AND date <= :to
+       GROUP BY date
+       ORDER BY date ASC`
+    );
+    stmt.bind({ ":from": from, ":to": to });
+    const rows: DailySummary[] = [];
+    while (stmt.step()) {
+      const row = stmt.get({}) as Row;
+      rows.push({
+        date: row.date as string,
+        calories: Number(row.calories) || 0,
+        protein: Number(row.protein) || 0,
+        fat: Number(row.fat) || 0,
+        carbs: Number(row.carbs) || 0,
+      });
+    }
+    stmt.finalize();
+    return rows;
   },
 };

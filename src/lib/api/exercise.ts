@@ -1,52 +1,79 @@
-import type { ExerciseRecord, CreateExerciseRecordInput } from "@/lib/notion/mappers/exercise-record-mapper";
+import type {
+  ExerciseRecord,
+  CreateExerciseRecordInput,
+} from "@/lib/notion/mappers/exercise-record-mapper";
 import type { Exercise } from "@/lib/notion/mappers/exercise-mapper";
+import { getDatabase, persistDatabase } from "@/lib/sqljs/database";
+import {
+  exerciseRecordsLocalRepo,
+  type DailyWorkoutSummary,
+} from "@/lib/sqljs/repositories/exercise-records";
+import { exercisesLocalRepo } from "@/lib/sqljs/repositories/exercises";
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  if (res.status === 204) return undefined as T;
-  return res.json();
+export type { DailyWorkoutSummary };
+
+export async function getExerciseRecords(
+  date: string,
+): Promise<ExerciseRecord[]> {
+  const db = await getDatabase();
+  return exerciseRecordsLocalRepo.getByDate(db, date);
 }
 
-export function getExerciseRecords(date: string): Promise<ExerciseRecord[]> {
-  return apiFetch(`/api/notion/exercise/records?date=${date}`);
+export async function addExerciseRecord(
+  data: CreateExerciseRecordInput,
+): Promise<{ id: string }> {
+  const db = await getDatabase();
+  const id = crypto.randomUUID();
+  exerciseRecordsLocalRepo.upsert(db, { id, ...data });
+  await persistDatabase();
+  return { id };
 }
 
-export function addExerciseRecord(data: CreateExerciseRecordInput): Promise<{ id: string }> {
-  return apiFetch("/api/notion/exercise/records", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+export async function removeExerciseRecord(id: string): Promise<void> {
+  const db = await getDatabase();
+  exerciseRecordsLocalRepo.delete(db, id);
+  await persistDatabase();
 }
 
-export function removeExerciseRecord(id: string): Promise<void> {
-  return apiFetch(`/api/notion/exercise/records/${id}`, { method: "DELETE" });
+export async function searchExercises(name?: string): Promise<Exercise[]> {
+  const db = await getDatabase();
+  return exercisesLocalRepo.search(db, name);
 }
 
-export function searchExercises(name?: string): Promise<Exercise[]> {
-  const url = name
-    ? `/api/notion/exercise/exercises?name=${encodeURIComponent(name)}`
-    : "/api/notion/exercise/exercises";
-  return apiFetch(url);
+export async function getExerciseRecordDates(
+  startDate: string,
+  endDate: string,
+): Promise<string[]> {
+  const db = await getDatabase();
+  return exerciseRecordsLocalRepo.getDistinctDates(db, startDate, endDate);
 }
 
-export function getExerciseRecordDates(startDate: string, endDate: string): Promise<string[]> {
-  return apiFetch(`/api/notion/exercise/dates?start=${startDate}&end=${endDate}`);
+export async function getLastExerciseRecord(
+  exerciseName: string,
+): Promise<ExerciseRecord | null> {
+  const db = await getDatabase();
+  return exerciseRecordsLocalRepo.getLatestByExercise(db, exerciseName);
 }
 
-export function getLastExerciseRecord(exerciseName: string): Promise<ExerciseRecord | null> {
-  return apiFetch(`/api/notion/exercise/records/last?name=${encodeURIComponent(exerciseName)}`);
+export async function getPRExerciseRecord(
+  exerciseName: string,
+): Promise<ExerciseRecord | null> {
+  const db = await getDatabase();
+  return exerciseRecordsLocalRepo.getPRByExercise(db, exerciseName);
 }
 
-export function getPRExerciseRecord(exerciseName: string): Promise<ExerciseRecord | null> {
-  return apiFetch(`/api/notion/exercise/records/pr?name=${encodeURIComponent(exerciseName)}`);
+export async function getExerciseProgress(
+  exerciseName: string,
+  weeks = 12,
+): Promise<ExerciseRecord[]> {
+  const db = await getDatabase();
+  return exerciseRecordsLocalRepo.getProgressByExercise(db, exerciseName, weeks);
 }
 
-export function getExerciseProgress(exerciseName: string, weeks = 12): Promise<ExerciseRecord[]> {
-  return apiFetch(`/api/notion/exercise/records/progress?name=${encodeURIComponent(exerciseName)}&weeks=${weeks}`);
-}
-
-export function getWeeklyWorkoutSummary(from: string, to: string): Promise<import("@/app/api/notion/exercise/records/weekly-summary/route").DailyWorkoutSummary[]> {
-  return apiFetch(`/api/notion/exercise/records/weekly-summary?from=${from}&to=${to}`);
+export async function getWeeklyWorkoutSummary(
+  from: string,
+  to: string,
+): Promise<DailyWorkoutSummary[]> {
+  const db = await getDatabase();
+  return exerciseRecordsLocalRepo.getDailyWorkoutSummary(db, from, to);
 }

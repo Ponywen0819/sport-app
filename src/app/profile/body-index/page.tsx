@@ -17,7 +17,6 @@ import {
 import { getLatestBodyIndex, getBodyIndexHistory, addBodyIndex } from "@/lib/api/body-index";
 import type { BodyIndex, CreateBodyIndexInput } from "@/lib/notion/mappers/body-index-mapper";
 import { getCurrentDate } from "@/utils/time";
-import { BodyIndexSchemaGate } from "./components/schema-gate";
 
 const formatDate = (d: Date): string => {
   const y = d.getFullYear();
@@ -58,10 +57,7 @@ export default function BodyIndexPage() {
         </button>
       </div>
 
-      <BodyIndexSchemaGate>
-        {/* BodyIndexData only mounts (and queries) when gate passes */}
-        <BodyIndexData onAddClick={() => setIsModalOpen(true)} />
-      </BodyIndexSchemaGate>
+      <BodyIndexData onAddClick={() => setIsModalOpen(true)} />
 
       <AnimatePresence>
         {isModalOpen && (
