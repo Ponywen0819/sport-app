@@ -2,7 +2,10 @@ import type {
   ExerciseRecord,
   CreateExerciseRecordInput,
 } from "@/lib/notion/mappers/exercise-record-mapper";
-import type { Exercise } from "@/lib/notion/mappers/exercise-mapper";
+import type {
+  Exercise,
+  ExerciseInput,
+} from "@/lib/notion/mappers/exercise-mapper";
 import { getDatabase, persistDatabase } from "@/lib/sqljs/database";
 import {
   exerciseRecordsLocalRepo,
@@ -53,6 +56,31 @@ export async function getLastExerciseRecord(
 ): Promise<ExerciseRecord | null> {
   const db = await getDatabase();
   return exerciseRecordsLocalRepo.getLatestByExercise(db, exerciseName);
+}
+
+export async function createExercise(data: ExerciseInput): Promise<Exercise> {
+  const db = await getDatabase();
+  const exercise: Exercise = { id: crypto.randomUUID(), ...data };
+  exercisesLocalRepo.upsert(db, exercise);
+  await persistDatabase();
+  return exercise;
+}
+
+export async function updateExercise(
+  id: string,
+  data: ExerciseInput,
+): Promise<Exercise> {
+  const db = await getDatabase();
+  const exercise: Exercise = { id, ...data };
+  exercisesLocalRepo.upsert(db, exercise);
+  await persistDatabase();
+  return exercise;
+}
+
+export async function deleteExercise(id: string): Promise<void> {
+  const db = await getDatabase();
+  exercisesLocalRepo.delete(db, id);
+  await persistDatabase();
 }
 
 export async function getPRExerciseRecord(

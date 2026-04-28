@@ -33,6 +33,14 @@ export const exercisesLocalRepo = {
     stmt.finalize();
   },
 
+  upsert(db: Database, exercise: Exercise): void {
+    this.upsertMany(db, [exercise]);
+  },
+
+  delete(db: Database, id: string): void {
+    db.exec({ sql: "DELETE FROM exercises WHERE id = ?", bind: [id] });
+  },
+
   search(db: Database, name?: string): Exercise[] {
     const sql = name
       ? "SELECT * FROM exercises WHERE name LIKE :name ORDER BY name LIMIT 100"
