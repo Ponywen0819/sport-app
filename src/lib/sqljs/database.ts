@@ -72,6 +72,83 @@ function runMigrations(db: Database): void {
     "UPDATE exercises SET machine_name = name WHERE machine_name IS NULL OR machine_name = ''",
   );
   tryExec("ALTER TABLE exercises DROP COLUMN name");
+
+  // workout v2: preserve the legacy exercise_records table while introducing
+  // session/block/set-level tables for more flexible workout logging.
+  tryExec(`
+    INSERT OR IGNORE INTO workout_sessions (id, date, created_at, updated_at)
+    SELECT 'legacy-session-' || date, date, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    FROM exercise_records
+    GROUP BY date
+  `);
+
+  tryExec(`
+    INSERT OR IGNORE INTO workout_blocks
+      (id, session_id, order_index, type, rounds, created_at, updated_at)
+    SELECT
+      'legacy-block-' || id,
+      'legacy-session-' || date,
+      rowid,
+      CASE
+        WHEN drop_weight_kg IS NOT NULL OR drop_reps IS NOT NULL THEN 'drop_set'
+        ELSE 'single'
+      END,
+      CASE WHEN sets > 0 THEN sets ELSE 1 END,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    FROM exercise_records
+  `);
+
+  tryExec(`
+    WITH RECURSIVE expanded(record_id, round_number) AS (
+      SELECT id, 1 FROM exercise_records
+      UNION ALL
+      SELECT expanded.record_id, expanded.round_number + 1
+      FROM expanded
+      JOIN exercise_records ON exercise_records.id = expanded.record_id
+      WHERE expanded.round_number <
+        CASE WHEN exercise_records.sets > 0 THEN exercise_records.sets ELSE 1 END
+    )
+    INSERT OR IGNORE INTO exercise_sets
+      (id, block_id, exercise_id, exercise_name, round_index, order_index,
+       weight_kg, reps, set_type, legacy_record_id, created_at, updated_at)
+    SELECT
+      'legacy-set-' || r.id || '-' || expanded.round_number || '-0',
+      'legacy-block-' || r.id,
+      r.exercise_id,
+      r.exercise_name,
+      expanded.round_number - 1,
+      0,
+      r.weight_kg,
+      r.reps,
+      'normal',
+      r.id,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    FROM expanded
+    JOIN exercise_records r ON r.id = expanded.record_id
+  `);
+
+  tryExec(`
+    INSERT OR IGNORE INTO exercise_sets
+      (id, block_id, exercise_id, exercise_name, round_index, order_index,
+       weight_kg, reps, set_type, legacy_record_id, created_at, updated_at)
+    SELECT
+      'legacy-set-' || id || '-1-1',
+      'legacy-block-' || id,
+      exercise_id,
+      exercise_name,
+      0,
+      1,
+      COALESCE(drop_weight_kg, 0),
+      COALESCE(drop_reps, 0),
+      'drop',
+      id,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    FROM exercise_records
+    WHERE drop_weight_kg IS NOT NULL OR drop_reps IS NOT NULL
+  `);
 }
 
 /** Persist the in-memory database to IndexedDB. */

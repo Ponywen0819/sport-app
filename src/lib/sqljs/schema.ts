@@ -19,6 +19,45 @@ CREATE TABLE IF NOT EXISTS exercise_records (
   drop_reps      INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS workout_sessions (
+  id         TEXT PRIMARY KEY,
+  date       TEXT NOT NULL,
+  started_at TEXT,
+  ended_at   TEXT,
+  note       TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS workout_blocks (
+  id          TEXT PRIMARY KEY,
+  session_id  TEXT NOT NULL,
+  order_index INTEGER NOT NULL DEFAULT 0,
+  type        TEXT NOT NULL DEFAULT 'single',
+  rounds      INTEGER NOT NULL DEFAULT 1,
+  note        TEXT,
+  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES workout_sessions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS exercise_sets (
+  id               TEXT PRIMARY KEY,
+  block_id         TEXT NOT NULL,
+  exercise_id      TEXT,
+  exercise_name    TEXT NOT NULL,
+  round_index      INTEGER NOT NULL DEFAULT 0,
+  order_index      INTEGER NOT NULL DEFAULT 0,
+  weight_kg        REAL NOT NULL DEFAULT 0,
+  reps             INTEGER NOT NULL DEFAULT 0,
+  set_type         TEXT NOT NULL DEFAULT 'normal',
+  note             TEXT,
+  legacy_record_id TEXT,
+  created_at       TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (block_id) REFERENCES workout_blocks(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS foods (
   id                   TEXT PRIMARY KEY,
   name                 TEXT NOT NULL,
@@ -67,6 +106,11 @@ CREATE TABLE IF NOT EXISTS body_indexes (
 
 CREATE INDEX IF NOT EXISTS idx_er_date      ON exercise_records(date);
 CREATE INDEX IF NOT EXISTS idx_er_name      ON exercise_records(exercise_name);
+CREATE INDEX IF NOT EXISTS idx_ws_date      ON workout_sessions(date);
+CREATE INDEX IF NOT EXISTS idx_wb_session   ON workout_blocks(session_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_es_block     ON exercise_sets(block_id, round_index, order_index);
+CREATE INDEX IF NOT EXISTS idx_es_exercise  ON exercise_sets(exercise_name);
+CREATE INDEX IF NOT EXISTS idx_es_legacy    ON exercise_sets(legacy_record_id);
 CREATE INDEX IF NOT EXISTS idx_mi_date      ON meal_items(date);
 CREATE INDEX IF NOT EXISTS idx_mi_date_type ON meal_items(date, meal_type);
 CREATE INDEX IF NOT EXISTS idx_bi_date      ON body_indexes(date);
