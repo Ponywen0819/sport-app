@@ -1,8 +1,9 @@
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS exercises (
-  id           TEXT PRIMARY KEY,
-  name         TEXT NOT NULL,
-  equipment    TEXT,
+  id            TEXT PRIMARY KEY,
+  brand         TEXT,
+  machine_name  TEXT NOT NULL,
+  equipment     TEXT,
   muscle_groups TEXT
 );
 

@@ -44,11 +44,34 @@ export async function getDatabase(): Promise<Database> {
 
     // Always run schema — CREATE TABLE IF NOT EXISTS is idempotent
     db.exec(SCHEMA_SQL);
+    runMigrations(db);
 
     return db;
   })();
 
   return _dbPromise;
+}
+
+/**
+ * Idempotent migrations for tables that pre-date schema changes.
+ * Each statement is wrapped in try/catch so re-runs on already-migrated DBs
+ * (or fresh DBs that already match the new schema) are no-ops.
+ */
+function runMigrations(db: Database): void {
+  const tryExec = (sql: string) => {
+    try {
+      db.exec(sql);
+    } catch {
+      // ignore: column already exists / does not exist / etc.
+    }
+  };
+  // exercises: name -> brand + machine_name
+  tryExec("ALTER TABLE exercises ADD COLUMN brand TEXT");
+  tryExec("ALTER TABLE exercises ADD COLUMN machine_name TEXT");
+  tryExec(
+    "UPDATE exercises SET machine_name = name WHERE machine_name IS NULL OR machine_name = ''",
+  );
+  tryExec("ALTER TABLE exercises DROP COLUMN name");
 }
 
 /** Persist the in-memory database to IndexedDB. */

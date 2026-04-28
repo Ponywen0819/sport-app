@@ -2,16 +2,22 @@ import type { PageObjectResponse } from "@notionhq/client/build/src/api-endpoint
 
 export type Exercise = {
   id: string;
-  name: string;
+  brand: string;
+  machineName: string;
   equipment: string;
   muscleGroups: string[];
 };
 
 export type ExerciseInput = {
-  name: string;
+  brand: string;
+  machineName: string;
   equipment: string;
   muscleGroups: string[];
 };
+
+export const getExerciseDisplayName = (
+  e: Pick<Exercise, "brand" | "machineName">,
+): string => [e.brand, e.machineName].filter(Boolean).join(" ").trim();
 
 const getText = (prop: PageObjectResponse["properties"][string]): string => {
   if (prop?.type === "title") return prop.title[0]?.plain_text ?? "";
@@ -32,16 +38,28 @@ const getMultiSelect = (prop: PageObjectResponse["properties"][string]): string[
 export const exerciseMapper = {
   fromPage: (page: PageObjectResponse): Exercise => {
     const p = page.properties;
+    const brand = getText(p.Brand);
+    const machineName = getText(p.MachineName);
+    // Legacy fallback: older Notion DBs only have a Name title field.
+    const fallbackName = !machineName ? getText(p.Name) : "";
     return {
       id: page.id,
-      name: getText(p.Name),
+      brand,
+      machineName: machineName || fallbackName,
       equipment: getSelect(p.Equipment),
       muscleGroups: getMultiSelect(p.MuscleGroup),
     };
   },
-  toProperties: (data: ExerciseInput): Record<string, unknown> => ({
-    Name: { title: [{ text: { content: data.name } }] },
-    Equipment: data.equipment ? { select: { name: data.equipment } } : { select: null },
-    MuscleGroup: { multi_select: data.muscleGroups.map((name) => ({ name })) },
-  }),
+  toProperties: (data: ExerciseInput): Record<string, unknown> => {
+    const display = getExerciseDisplayName(data);
+    return {
+      Name: { title: [{ text: { content: display } }] },
+      Brand: { rich_text: [{ text: { content: data.brand } }] },
+      MachineName: { rich_text: [{ text: { content: data.machineName } }] },
+      Equipment: data.equipment
+        ? { select: { name: data.equipment } }
+        : { select: null },
+      MuscleGroup: { multi_select: data.muscleGroups.map((name) => ({ name })) },
+    };
+  },
 };

@@ -6,7 +6,8 @@ type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 function rowToExercise(row: Row): Exercise {
   return {
     id: row.id as string,
-    name: row.name as string,
+    brand: (row.brand as string) ?? "",
+    machineName: (row.machine_name as string) ?? "",
     equipment: (row.equipment as string) ?? "",
     muscleGroups: row.muscle_groups
       ? JSON.parse(row.muscle_groups as string)
@@ -17,14 +18,15 @@ function rowToExercise(row: Row): Exercise {
 export const exercisesLocalRepo = {
   upsertMany(db: Database, exercises: Exercise[]): void {
     const stmt = db.prepare(`
-      INSERT OR REPLACE INTO exercises (id, name, equipment, muscle_groups)
-      VALUES (:id, :name, :equipment, :muscle_groups)
+      INSERT OR REPLACE INTO exercises (id, brand, machine_name, equipment, muscle_groups)
+      VALUES (:id, :brand, :machine_name, :equipment, :muscle_groups)
     `);
     for (const e of exercises) {
       stmt
         .bind({
           ":id": e.id,
-          ":name": e.name,
+          ":brand": e.brand || null,
+          ":machine_name": e.machineName,
           ":equipment": e.equipment ?? null,
           ":muscle_groups": JSON.stringify(e.muscleGroups),
         })
@@ -43,10 +45,12 @@ export const exercisesLocalRepo = {
 
   search(db: Database, name?: string): Exercise[] {
     const sql = name
-      ? "SELECT * FROM exercises WHERE name LIKE :name ORDER BY name LIMIT 100"
-      : "SELECT * FROM exercises ORDER BY name LIMIT 100";
+      ? `SELECT * FROM exercises
+         WHERE brand LIKE :q OR machine_name LIKE :q
+         ORDER BY machine_name LIMIT 100`
+      : "SELECT * FROM exercises ORDER BY machine_name LIMIT 100";
     const stmt = db.prepare(sql);
-    if (name) stmt.bind({ ":name": `%${name}%` });
+    if (name) stmt.bind({ ":q": `%${name}%` });
     const rows: Exercise[] = [];
     while (stmt.step()) rows.push(rowToExercise(stmt.get({}) as Row));
     stmt.finalize();

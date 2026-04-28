@@ -22,7 +22,10 @@ import {
   convertToDisplay,
   convertToKg,
 } from "@/lib/notion/mappers/exercise-record-mapper";
-import type { Exercise } from "@/lib/notion/mappers/exercise-mapper";
+import {
+  getExerciseDisplayName,
+  type Exercise,
+} from "@/lib/notion/mappers/exercise-mapper";
 import { IoAdd, IoClose, IoTrash, IoArrowForward, IoTime } from "react-icons/io5";
 import { useRecentExercises } from "@/providers/recent-exercises-provider";
 
@@ -58,7 +61,7 @@ export const ExerciseTracker = ({ date }: ExerciseTrackerProps) => {
   });
 
   const exerciseNameMap = useMemo(
-    () => new Map(allExercises.map((e) => [e.id, e.name])),
+    () => new Map(allExercises.map((e) => [e.id, getExerciseDisplayName(e)])),
     [allExercises],
   );
 
@@ -311,22 +314,23 @@ const AddExerciseModal = ({
   });
 
   const { data: lastRecord } = useQuery({
-    queryKey: ["exercise-last", selectedExercise?.name],
-    queryFn: () => getLastExerciseRecord(selectedExercise!.name),
+    queryKey: ["exercise-last", selectedExercise?.id],
+    queryFn: () => getLastExerciseRecord(getExerciseDisplayName(selectedExercise!)),
     enabled: !!selectedExercise && step === "configure",
   });
 
   const { data: prRecord } = useQuery({
-    queryKey: ["exercise-pr", selectedExercise?.name],
-    queryFn: () => getPRExerciseRecord(selectedExercise!.name),
+    queryKey: ["exercise-pr", selectedExercise?.id],
+    queryFn: () => getPRExerciseRecord(getExerciseDisplayName(selectedExercise!)),
     enabled: !!selectedExercise && step === "configure",
   });
 
   const [showProgress, setShowProgress] = useState(false);
 
   const { data: progressRecords = [] } = useQuery({
-    queryKey: ["exercise-progress", selectedExercise?.name],
-    queryFn: () => getExerciseProgress(selectedExercise!.name, 12),
+    queryKey: ["exercise-progress", selectedExercise?.id],
+    queryFn: () =>
+      getExerciseProgress(getExerciseDisplayName(selectedExercise!), 12),
     enabled: !!selectedExercise && step === "configure" && showProgress,
   });
 
@@ -353,7 +357,7 @@ const AddExerciseModal = ({
           : null;
 
       return addExerciseRecord({
-        exerciseName: selectedExercise.name,
+        exerciseName: getExerciseDisplayName(selectedExercise),
         exerciseId: selectedExercise.id,
         date,
         weightKg,
@@ -413,7 +417,11 @@ const AddExerciseModal = ({
               </button>
             )}
             <h3 className="text-stone-100 font-semibold">
-              {step === "select" ? "選擇動作" : selectedExercise?.name}
+              {step === "select"
+                ? "選擇動作"
+                : selectedExercise
+                  ? getExerciseDisplayName(selectedExercise)
+                  : ""}
             </h3>
           </div>
           <button
@@ -492,7 +500,16 @@ const AddExerciseModal = ({
                         className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-stone-800 text-left transition-colors"
                       >
                         <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-stone-100 text-sm">{exercise.name}</span>
+                          <div className="flex items-baseline gap-1.5 min-w-0">
+                            {exercise.brand && (
+                              <span className="text-stone-500 text-xs flex-shrink-0">
+                                {exercise.brand}
+                              </span>
+                            )}
+                            <span className="text-stone-100 text-sm truncate">
+                              {exercise.machineName}
+                            </span>
+                          </div>
                           {exercise.muscleGroups.length > 0 && (
                             <span className="text-stone-500 text-xs truncate">
                               {exercise.muscleGroups.join(" · ")}
@@ -527,9 +544,16 @@ const AddExerciseModal = ({
                       className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-stone-800 text-left transition-colors"
                     >
                       <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-stone-100 text-sm">
-                          {exercise.name}
-                        </span>
+                        <div className="flex items-baseline gap-1.5 min-w-0">
+                          {exercise.brand && (
+                            <span className="text-stone-500 text-xs flex-shrink-0">
+                              {exercise.brand}
+                            </span>
+                          )}
+                          <span className="text-stone-100 text-sm truncate">
+                            {exercise.machineName}
+                          </span>
+                        </div>
                         {exercise.muscleGroups.length > 0 && (
                           <span className="text-stone-500 text-xs truncate">
                             {exercise.muscleGroups.join(" · ")}
@@ -731,7 +755,9 @@ const AddExerciseModal = ({
               {previewText && (
                 <div className="bg-stone-800/80 rounded-xl px-4 py-3">
                   <p className="text-stone-100 text-sm font-medium">
-                    {selectedExercise?.name}
+                    {selectedExercise
+                      ? getExerciseDisplayName(selectedExercise)
+                      : ""}
                   </p>
                   <p className="text-stone-400 text-xs mt-0.5">{previewText}</p>
                   {(weight || dropWeight) && (

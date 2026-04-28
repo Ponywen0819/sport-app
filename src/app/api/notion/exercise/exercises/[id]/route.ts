@@ -12,14 +12,15 @@ export async function PUT(
 
   const { id } = await params;
   const body = (await req.json()) as Partial<ExerciseInput>;
-  const name = body.name?.trim();
-  if (!name) {
-    return NextResponse.json({ error: "名稱不可為空" }, { status: 400 });
+  const machineName = body.machineName?.trim();
+  if (!machineName) {
+    return NextResponse.json({ error: "機器名稱不可為空" }, { status: 400 });
   }
 
   const repo = new ExercisesRepository(config.client, config.exercisesDatabaseId);
   const exercise = await repo.update(id, {
-    name,
+    brand: body.brand?.trim() ?? "",
+    machineName,
     equipment: body.equipment ?? "",
     muscleGroups: body.muscleGroups ?? [],
   });

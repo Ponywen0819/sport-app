@@ -18,14 +18,15 @@ export async function POST(req: NextRequest) {
   if (!config) return notConfigured();
 
   const body = (await req.json()) as Partial<ExerciseInput>;
-  const name = body.name?.trim();
-  if (!name) {
-    return NextResponse.json({ error: "名稱不可為空" }, { status: 400 });
+  const machineName = body.machineName?.trim();
+  if (!machineName) {
+    return NextResponse.json({ error: "機器名稱不可為空" }, { status: 400 });
   }
 
   const repo = new ExercisesRepository(config.client, config.exercisesDatabaseId);
   const exercise = await repo.create({
-    name,
+    brand: body.brand?.trim() ?? "",
+    machineName,
     equipment: body.equipment ?? "",
     muscleGroups: body.muscleGroups ?? [],
   });
