@@ -1,59 +1,74 @@
 import type { MealItem } from "@/lib/notion/mappers/meal-item-mapper";
 import type { Food } from "@/lib/notion/mappers/food-mapper";
+import { getDatabase, persistDatabase } from "@/lib/sqljs/database";
+import {
+  mealItemsLocalRepo,
+  type DailySummary,
+  type NutritionOverview,
+} from "@/lib/sqljs/repositories/meal-items";
+import { foodsLocalRepo } from "@/lib/sqljs/repositories/foods";
 
-type NutritionOverview = { calories: number; protein: number; fat: number; carbs: number };
-export type { DailySummary } from "@/app/api/notion/nutrition/weekly-summary/route";
+export type { DailySummary };
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  if (res.status === 204) return undefined as T;
-  return res.json();
+export async function getNutritionOverview(
+  date: string,
+): Promise<NutritionOverview> {
+  const db = await getDatabase();
+  return mealItemsLocalRepo.getOverviewByDate(db, date);
 }
 
-export function getNutritionOverview(date: string): Promise<NutritionOverview> {
-  return apiFetch(`/api/notion/nutrition/overview?date=${date}`);
+export async function getMealItems(
+  date: string,
+  mealType: MealItem["mealType"],
+): Promise<MealItem[]> {
+  const db = await getDatabase();
+  return mealItemsLocalRepo.getByDateAndMealType(db, date, mealType);
 }
 
-export function getMealItems(date: string, mealType: MealItem["mealType"]): Promise<MealItem[]> {
-  return apiFetch(`/api/notion/nutrition/meals?date=${date}&mealType=${mealType}`);
+export async function addMealItem(
+  data: Omit<MealItem, "id">,
+): Promise<{ id: string }> {
+  const db = await getDatabase();
+  const id = crypto.randomUUID();
+  mealItemsLocalRepo.upsert(db, { id, ...data });
+  await persistDatabase();
+  return { id };
 }
 
-export function addMealItem(data: Omit<MealItem, "id">): Promise<{ id: string }> {
-  return apiFetch("/api/notion/nutrition/meals", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+export async function removeMealItem(id: string): Promise<void> {
+  const db = await getDatabase();
+  mealItemsLocalRepo.delete(db, id);
+  await persistDatabase();
 }
 
-export function removeMealItem(id: string): Promise<void> {
-  return apiFetch(`/api/notion/nutrition/meals/${id}`, { method: "DELETE" });
+export async function updateMealItem(
+  id: string,
+  data: { intake: number; calories: number; protein: number; fat: number; carbs: number },
+): Promise<void> {
+  const db = await getDatabase();
+  mealItemsLocalRepo.update(db, id, data);
+  await persistDatabase();
 }
 
-export function updateMealItem(id: string, data: { intake: number; calories: number; protein: number; fat: number; carbs: number }): Promise<void> {
-  return apiFetch(`/api/notion/nutrition/meals/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+export async function searchFoods(name?: string): Promise<Food[]> {
+  const db = await getDatabase();
+  return foodsLocalRepo.search(db, name);
 }
 
-export function searchFoods(name?: string): Promise<Food[]> {
-  const url = name
-    ? `/api/notion/nutrition/foods?name=${encodeURIComponent(name)}`
-    : "/api/notion/nutrition/foods";
-  return apiFetch(url);
+export async function addFood(
+  data: Omit<Food, "id">,
+): Promise<{ id: string }> {
+  const db = await getDatabase();
+  const id = crypto.randomUUID();
+  foodsLocalRepo.upsert(db, { id, ...data });
+  await persistDatabase();
+  return { id };
 }
 
-export function addFood(data: Omit<Food, "id">): Promise<{ id: string }> {
-  return apiFetch("/api/notion/nutrition/foods", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-}
-
-export function getWeeklySummary(from: string, to: string): Promise<import("@/app/api/notion/nutrition/weekly-summary/route").DailySummary[]> {
-  return apiFetch(`/api/notion/nutrition/weekly-summary?from=${from}&to=${to}`);
+export async function getWeeklySummary(
+  from: string,
+  to: string,
+): Promise<DailySummary[]> {
+  const db = await getDatabase();
+  return mealItemsLocalRepo.getDailySummaryByRange(db, from, to);
 }

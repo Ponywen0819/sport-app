@@ -1,27 +1,35 @@
-import type { BodyIndex, CreateBodyIndexInput } from "@/lib/notion/mappers/body-index-mapper";
+import type {
+  BodyIndex,
+  CreateBodyIndexInput,
+} from "@/lib/notion/mappers/body-index-mapper";
+import { getDatabase, persistDatabase } from "@/lib/sqljs/database";
+import { bodyIndexesLocalRepo } from "@/lib/sqljs/repositories/body-indexes";
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  return res.json();
+export async function getLatestBodyIndex(): Promise<BodyIndex | null> {
+  const db = await getDatabase();
+  return bodyIndexesLocalRepo.getLatest(db);
 }
 
-export function getLatestBodyIndex(): Promise<BodyIndex | null> {
-  return apiFetch("/api/notion/body-index");
+export async function getBodyIndexByDate(
+  date: string,
+): Promise<BodyIndex | null> {
+  const db = await getDatabase();
+  return bodyIndexesLocalRepo.getByDate(db, date);
 }
 
-export function getBodyIndexByDate(date: string): Promise<BodyIndex | null> {
-  return apiFetch(`/api/notion/body-index?date=${date}`);
+export async function getBodyIndexHistory(
+  limit: number = 30,
+): Promise<BodyIndex[]> {
+  const db = await getDatabase();
+  return bodyIndexesLocalRepo.getHistory(db, limit);
 }
 
-export function getBodyIndexHistory(limit: number = 30): Promise<BodyIndex[]> {
-  return apiFetch(`/api/notion/body-index?history=true&limit=${limit}`);
-}
-
-export function addBodyIndex(data: CreateBodyIndexInput): Promise<{ id: string }> {
-  return apiFetch("/api/notion/body-index", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+export async function addBodyIndex(
+  data: CreateBodyIndexInput,
+): Promise<{ id: string }> {
+  const db = await getDatabase();
+  const id = crypto.randomUUID();
+  bodyIndexesLocalRepo.upsert(db, { id, ...data });
+  await persistDatabase();
+  return { id };
 }

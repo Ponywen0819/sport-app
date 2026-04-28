@@ -736,7 +736,7 @@ const AddExerciseModal = ({
                   <p className="text-stone-400 text-xs mt-0.5">{previewText}</p>
                   {(weight || dropWeight) && (
                     <p className="text-stone-600 text-xs mt-0.5">
-                      存入 Notion：
+                      儲存（kg）：
                       {weight
                         ? `${convertToKg(parseFloat(weight) || 0, weightUnit)} kg`
                         : ""}

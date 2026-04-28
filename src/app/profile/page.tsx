@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IoChevronForward, IoBody } from "react-icons/io5";
+import { IoChevronForward, IoBody, IoBarbell } from "react-icons/io5";
 import { IoNutrition } from "react-icons/io5";
 import { SiNotion } from "react-icons/si";
 
@@ -53,6 +53,17 @@ export default function ProfilePage() {
           iconBg="bg-orange-500/15"
           title="飲食目標"
           description="每日卡路里與三大營養素目標"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <h2 className="text-stone-400 text-xs font-medium uppercase tracking-wider">運動設定</h2>
+        <SettingsRow
+          href="/profile/exercises"
+          icon={<IoBarbell size={18} className="text-blue-400" />}
+          iconBg="bg-blue-500/15"
+          title="動作管理"
+          description="新增、編輯、刪除訓練動作"
         />
       </div>
 

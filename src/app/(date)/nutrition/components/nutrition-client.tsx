@@ -4,14 +4,13 @@ import { useState } from "react";
 import { DateSelector, getCurrentCalendarDate, type CalendarDate } from "@/components/date-selector";
 import { MealTracker } from "./meal-tracker";
 import { NutritionOverview } from "./nutrition-overview";
-import { SchemaMismatchBanner } from "./schema-mismatch-banner";
 import { WeeklySummary } from "./weekly-summary";
 
 export const NutritionClient = () => {
   const [date, setDate] = useState<CalendarDate>(getCurrentCalendarDate());
 
   return (
-    <SchemaMismatchBanner>
+    <>
       <div className="px-4 pb-2">
         <DateSelector value={date} onSelect={setDate} />
       </div>
@@ -30,6 +29,6 @@ export const NutritionClient = () => {
         <MealTracker mealType="Dinner" date={date} />
         <MealTracker mealType="Snack" date={date} />
       </div>
-    </SchemaMismatchBanner>
+    </>
   );
 };

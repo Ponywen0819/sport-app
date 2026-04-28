@@ -3,6 +3,12 @@ import type { ExerciseRecord } from "@/lib/notion/mappers/exercise-record-mapper
 
 type Row = Record<string, import("@sqlite.org/sqlite-wasm").SqlValue>;
 
+export type DailyWorkoutSummary = {
+  date: string;
+  exerciseCount: number;
+  totalSets: number;
+};
+
 function rowToRecord(row: Row): ExerciseRecord {
   return {
     id: row.id as string,
@@ -139,5 +145,70 @@ export const exerciseRecordsLocalRepo = {
     const cnt = Number((stmt.get({}) as Row).cnt);
     stmt.finalize();
     return cnt;
+  },
+
+  getProgressByExercise(
+    db: Database,
+    exerciseName: string,
+    weeks: number
+  ): ExerciseRecord[] {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - weeks * 7);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const stmt = db.prepare(
+      `SELECT * FROM exercise_records
+       WHERE exercise_name LIKE :name
+         AND date >= :from
+         AND date <= :to
+       ORDER BY date ASC`
+    );
+    stmt.bind({
+      ":name": `%${exerciseName}%`,
+      ":from": fmt(from),
+      ":to": fmt(to),
+    });
+
+    const byDay = new Map<string, ExerciseRecord>();
+    while (stmt.step()) {
+      const record = rowToRecord(stmt.get({}) as Row);
+      const existing = byDay.get(record.date);
+      if (!existing || record.weightKg > existing.weightKg) {
+        byDay.set(record.date, record);
+      }
+    }
+    stmt.finalize();
+    return Array.from(byDay.values()).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+  },
+
+  getDailyWorkoutSummary(
+    db: Database,
+    from: string,
+    to: string
+  ): DailyWorkoutSummary[] {
+    const stmt = db.prepare(
+      `SELECT date,
+              COUNT(*) AS exercise_count,
+              COALESCE(SUM(CASE WHEN sets > 0 THEN sets ELSE 1 END), 0) AS total_sets
+       FROM exercise_records
+       WHERE date >= :from AND date <= :to
+       GROUP BY date
+       ORDER BY date ASC`
+    );
+    stmt.bind({ ":from": from, ":to": to });
+    const rows: DailyWorkoutSummary[] = [];
+    while (stmt.step()) {
+      const row = stmt.get({}) as Row;
+      rows.push({
+        date: row.date as string,
+        exerciseCount: Number(row.exercise_count),
+        totalSets: Number(row.total_sets),
+      });
+    }
+    stmt.finalize();
+    return rows;
   },
 };
