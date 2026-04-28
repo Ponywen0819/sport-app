@@ -1,5 +1,5 @@
 import type { ExerciseRecord, CreateExerciseRecordInput } from "@/lib/notion/mappers/exercise-record-mapper";
-import type { Exercise } from "@/lib/notion/mappers/exercise-mapper";
+import type { Exercise, ExerciseInput } from "@/lib/notion/mappers/exercise-mapper";
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -29,6 +29,26 @@ export function searchExercises(name?: string): Promise<Exercise[]> {
     ? `/api/notion/exercise/exercises?name=${encodeURIComponent(name)}`
     : "/api/notion/exercise/exercises";
   return apiFetch(url);
+}
+
+export function createExercise(data: ExerciseInput): Promise<Exercise> {
+  return apiFetch("/api/notion/exercise/exercises", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateExercise(id: string, data: ExerciseInput): Promise<Exercise> {
+  return apiFetch(`/api/notion/exercise/exercises/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteExercise(id: string): Promise<void> {
+  return apiFetch(`/api/notion/exercise/exercises/${id}`, { method: "DELETE" });
 }
 
 export function getExerciseRecordDates(startDate: string, endDate: string): Promise<string[]> {

@@ -7,6 +7,12 @@ export type Exercise = {
   muscleGroups: string[];
 };
 
+export type ExerciseInput = {
+  name: string;
+  equipment: string;
+  muscleGroups: string[];
+};
+
 const getText = (prop: PageObjectResponse["properties"][string]): string => {
   if (prop?.type === "title") return prop.title[0]?.plain_text ?? "";
   if (prop?.type === "rich_text") return prop.rich_text[0]?.plain_text ?? "";
@@ -33,4 +39,9 @@ export const exerciseMapper = {
       muscleGroups: getMultiSelect(p.MuscleGroup),
     };
   },
+  toProperties: (data: ExerciseInput): Record<string, unknown> => ({
+    Name: { title: [{ text: { content: data.name } }] },
+    Equipment: data.equipment ? { select: { name: data.equipment } } : { select: null },
+    MuscleGroup: { multi_select: data.muscleGroups.map((name) => ({ name })) },
+  }),
 };
