@@ -50,22 +50,22 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-stone-900 text-stone-100`}
       >
         <SqlJsProvider>
-        <NotionStoreProvider>
-          <NutritionGoalsProvider>
-            <RecentFoodsProvider>
-            <RecentExercisesProvider>
-            <QueryProvider>
-              <SwipeNavigator>
-                <main className="max-w-md mx-auto min-h-screen pb-16">
-                  {children}
-                </main>
-                <BottomNav />
-              </SwipeNavigator>
-            </QueryProvider>
-            </RecentExercisesProvider>
-            </RecentFoodsProvider>
-          </NutritionGoalsProvider>
-        </NotionStoreProvider>
+          <NotionStoreProvider>
+            <NutritionGoalsProvider>
+              <RecentFoodsProvider>
+                <RecentExercisesProvider>
+                  <QueryProvider>
+                    <SwipeNavigator>
+                      <main className="max-w-md mx-auto min-h-screen pb-16">
+                        {children}
+                      </main>
+                      <BottomNav />
+                    </SwipeNavigator>
+                  </QueryProvider>
+                </RecentExercisesProvider>
+              </RecentFoodsProvider>
+            </NutritionGoalsProvider>
+          </NotionStoreProvider>
         </SqlJsProvider>
       </body>
     </html>

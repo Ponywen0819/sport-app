@@ -47,7 +47,7 @@ export type SqlContextValue = {
   getExerciseRecordsByDate: (date: string) => ExerciseRecord[];
   getExerciseRecordsByDateRange: (
     startDate: string,
-    endDate: string
+    endDate: string,
   ) => ExerciseRecord[];
   getExerciseRecordDates: (startDate: string, endDate: string) => string[];
   getLatestExerciseRecord: (exerciseName: string) => ExerciseRecord | null;
@@ -67,12 +67,12 @@ export type SqlContextValue = {
   deleteMealItem: (id: string) => void;
   updateMealItem: (
     id: string,
-    data: Pick<MealItem, "intake" | "calories" | "protein" | "fat" | "carbs">
+    data: Pick<MealItem, "intake" | "calories" | "protein" | "fat" | "carbs">,
   ) => void;
   getMealItemsByDate: (date: string) => MealItem[];
   getMealItemsByDateAndType: (
     date: string,
-    mealType: MealItem["mealType"]
+    mealType: MealItem["mealType"],
   ) => MealItem[];
   getMealItemsByDateRange: (from: string, to: string) => MealItem[];
 
@@ -112,7 +112,9 @@ export function SqlJsProvider({ children }: { children: React.ReactNode }) {
     }, PERSIST_INTERVAL_MS);
 
     // Persist before the tab/window closes
-    const handleUnload = () => { persistDatabase(); };
+    const handleUnload = () => {
+      persistDatabase();
+    };
     window.addEventListener("beforeunload", handleUnload);
 
     return () => {
@@ -137,23 +139,36 @@ export function SqlJsProvider({ children }: { children: React.ReactNode }) {
     save,
 
     // Exercises
-    upsertExercises: (items) => exercisesLocalRepo.upsertMany(requireDb(), items),
-    searchExercises: (name) => (isReady ? exercisesLocalRepo.search(requireDb(), name) : []),
+    upsertExercises: (items) =>
+      exercisesLocalRepo.upsertMany(requireDb(), items),
+    searchExercises: (name) =>
+      isReady ? exercisesLocalRepo.search(requireDb(), name) : [],
 
     // Exercise Records
-    upsertExerciseRecords: (items) => exerciseRecordsLocalRepo.upsertMany(requireDb(), items),
-    upsertExerciseRecord: (item) => exerciseRecordsLocalRepo.upsert(requireDb(), item),
-    deleteExerciseRecord: (id) => exerciseRecordsLocalRepo.delete(requireDb(), id),
+    upsertExerciseRecords: (items) =>
+      exerciseRecordsLocalRepo.upsertMany(requireDb(), items),
+    upsertExerciseRecord: (item) =>
+      exerciseRecordsLocalRepo.upsert(requireDb(), item),
+    deleteExerciseRecord: (id) =>
+      exerciseRecordsLocalRepo.delete(requireDb(), id),
     getExerciseRecordsByDate: (date) =>
       isReady ? exerciseRecordsLocalRepo.getByDate(requireDb(), date) : [],
     getExerciseRecordsByDateRange: (start, end) =>
-      isReady ? exerciseRecordsLocalRepo.getByDateRange(requireDb(), start, end) : [],
+      isReady
+        ? exerciseRecordsLocalRepo.getByDateRange(requireDb(), start, end)
+        : [],
     getExerciseRecordDates: (start, end) =>
-      isReady ? exerciseRecordsLocalRepo.getDistinctDates(requireDb(), start, end) : [],
+      isReady
+        ? exerciseRecordsLocalRepo.getDistinctDates(requireDb(), start, end)
+        : [],
     getLatestExerciseRecord: (name) =>
-      isReady ? exerciseRecordsLocalRepo.getLatestByExercise(requireDb(), name) : null,
+      isReady
+        ? exerciseRecordsLocalRepo.getLatestByExercise(requireDb(), name)
+        : null,
     getPRExerciseRecord: (name) =>
-      isReady ? exerciseRecordsLocalRepo.getPRByExercise(requireDb(), name) : null,
+      isReady
+        ? exerciseRecordsLocalRepo.getPRByExercise(requireDb(), name)
+        : null,
     getAllExerciseRecords: () =>
       isReady ? exerciseRecordsLocalRepo.getAll(requireDb()) : [],
 
@@ -161,25 +176,33 @@ export function SqlJsProvider({ children }: { children: React.ReactNode }) {
     upsertFoods: (items) => foodsLocalRepo.upsertMany(requireDb(), items),
     upsertFood: (item) => foodsLocalRepo.upsert(requireDb(), item),
     deleteFood: (id) => foodsLocalRepo.delete(requireDb(), id),
-    searchFoods: (name) => (isReady ? foodsLocalRepo.search(requireDb(), name) : []),
-    getFoodById: (id) => (isReady ? foodsLocalRepo.getById(requireDb(), id) : null),
+    searchFoods: (name) =>
+      isReady ? foodsLocalRepo.search(requireDb(), name) : [],
+    getFoodById: (id) =>
+      isReady ? foodsLocalRepo.getById(requireDb(), id) : null,
 
     // Meal Items
-    upsertMealItems: (items) => mealItemsLocalRepo.upsertMany(requireDb(), items),
+    upsertMealItems: (items) =>
+      mealItemsLocalRepo.upsertMany(requireDb(), items),
     upsertMealItem: (item) => mealItemsLocalRepo.upsert(requireDb(), item),
     deleteMealItem: (id) => mealItemsLocalRepo.delete(requireDb(), id),
-    updateMealItem: (id, data) => mealItemsLocalRepo.update(requireDb(), id, data),
+    updateMealItem: (id, data) =>
+      mealItemsLocalRepo.update(requireDb(), id, data),
     getMealItemsByDate: (date) =>
       isReady ? mealItemsLocalRepo.getByDate(requireDb(), date) : [],
     getMealItemsByDateAndType: (date, mealType) =>
-      isReady ? mealItemsLocalRepo.getByDateAndMealType(requireDb(), date, mealType) : [],
+      isReady
+        ? mealItemsLocalRepo.getByDateAndMealType(requireDb(), date, mealType)
+        : [],
     getMealItemsByDateRange: (from, to) =>
       isReady ? mealItemsLocalRepo.getByDateRange(requireDb(), from, to) : [],
 
     // Body Indexes
-    upsertBodyIndexes: (items) => bodyIndexesLocalRepo.upsertMany(requireDb(), items),
+    upsertBodyIndexes: (items) =>
+      bodyIndexesLocalRepo.upsertMany(requireDb(), items),
     upsertBodyIndex: (item) => bodyIndexesLocalRepo.upsert(requireDb(), item),
-    getLatestBodyIndex: () => (isReady ? bodyIndexesLocalRepo.getLatest(requireDb()) : null),
+    getLatestBodyIndex: () =>
+      isReady ? bodyIndexesLocalRepo.getLatest(requireDb()) : null,
     getBodyIndexByDate: (date) =>
       isReady ? bodyIndexesLocalRepo.getByDate(requireDb(), date) : null,
     getBodyIndexHistory: (limit) =>

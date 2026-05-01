@@ -149,15 +149,94 @@ export const workoutsLocalRepo = {
   },
 
   deleteSession(db: Database, id: string): void {
+    db.exec({
+      sql: `DELETE FROM exercise_sets
+            WHERE block_id IN (SELECT id FROM workout_blocks WHERE session_id = ?)`,
+      bind: [id],
+    });
+    db.exec({ sql: "DELETE FROM workout_blocks WHERE session_id = ?", bind: [id] });
     db.exec({ sql: "DELETE FROM workout_sessions WHERE id = ?", bind: [id] });
   },
 
   deleteBlock(db: Database, id: string): void {
+    db.exec({ sql: "DELETE FROM exercise_sets WHERE block_id = ?", bind: [id] });
     db.exec({ sql: "DELETE FROM workout_blocks WHERE id = ?", bind: [id] });
   },
 
   deleteSet(db: Database, id: string): void {
     db.exec({ sql: "DELETE FROM exercise_sets WHERE id = ?", bind: [id] });
+  },
+
+  reorderBlocks(db: Database, sessionId: string, blockIds: string[]): void {
+    const stmt = db.prepare(`
+      UPDATE workout_blocks
+      SET order_index = :order_index,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = :id AND session_id = :session_id
+    `);
+    blockIds.forEach((id, index) => {
+      stmt
+        .bind({
+          ":id": id,
+          ":session_id": sessionId,
+          ":order_index": index,
+        })
+        .stepReset();
+    });
+    stmt.finalize();
+  },
+
+  reorderBlockRounds(
+    db: Database,
+    blockId: string,
+    roundIndices: number[],
+  ): void {
+    const tempStmt = db.prepare(`
+      UPDATE exercise_sets
+      SET round_index = :temp_round_index,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE block_id = :block_id AND round_index = :round_index
+    `);
+    roundIndices.forEach((roundIndex, newIndex) => {
+      tempStmt
+        .bind({
+          ":block_id": blockId,
+          ":round_index": roundIndex,
+          ":temp_round_index": -(newIndex + 1),
+        })
+        .stepReset();
+    });
+    tempStmt.finalize();
+
+    const finalStmt = db.prepare(`
+      UPDATE exercise_sets
+      SET round_index = :round_index,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE block_id = :block_id AND round_index = :temp_round_index
+    `);
+    roundIndices.forEach((_, newIndex) => {
+      finalStmt
+        .bind({
+          ":block_id": blockId,
+          ":temp_round_index": -(newIndex + 1),
+          ":round_index": newIndex,
+        })
+        .stepReset();
+    });
+    finalStmt.finalize();
+
+    db.exec({
+      sql: `
+        UPDATE workout_blocks
+        SET rounds = :rounds,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :block_id
+      `,
+      bind: {
+        ":block_id": blockId,
+        ":rounds": Math.max(1, roundIndices.length),
+      },
+    });
   },
 
   getSessionByDate(db: Database, date: string): WorkoutSessionWithBlocks | null {
