@@ -55,7 +55,7 @@ test-results/
 # Xcode
 .DS_Store
 
-xcuserdata/
+*.xcuserdata/
 *.xcuserstate
 DerivedData/
 build/
