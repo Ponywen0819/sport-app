@@ -5,6 +5,11 @@ struct HomeView: View {
     @Query private var allBlocks: [WorkoutBlock]
     @Query(sort: \BodyIndex.date, order: .reverse) private var bodyRecords: [BodyIndex]
 
+    @AppStorage("nutritionGoalCalories") private var goalCalories: Int = 0
+    @AppStorage("nutritionGoalProtein")  private var goalProtein:  Int = 0
+    @AppStorage("nutritionGoalCarbs")    private var goalCarbs:    Int = 0
+    @AppStorage("nutritionGoalFat")      private var goalFat:      Int = 0
+
     private let weekDayLabels = ["一", "二", "三", "四", "五", "六", "日"]
     private let calendar = Calendar.current
 
@@ -52,6 +57,14 @@ struct HomeView: View {
                 weeklyTrainingCard
                 if let body = latestBody {
                     bodyMetricsCard(record: body)
+                }
+                if goalCalories > 0 {
+                    HomeDayNutritionCard(
+                        goalCalories: goalCalories,
+                        goalProtein: goalProtein,
+                        goalCarbs: goalCarbs,
+                        goalFat: goalFat
+                    )
                 }
                 quickNavSection
             }
@@ -289,13 +302,85 @@ struct HomeView: View {
     }
 }
 
+// MARK: - Today's Nutrition Card (child view owns @Query)
+
+private struct HomeDayNutritionCard: View {
+    let goalCalories: Int
+    let goalProtein:  Int
+    let goalCarbs:    Int
+    let goalFat:      Int
+
+    @Query private var todayRecords: [MealRecord]
+
+    init(goalCalories: Int, goalProtein: Int, goalCarbs: Int, goalFat: Int) {
+        self.goalCalories = goalCalories
+        self.goalProtein  = goalProtein
+        self.goalCarbs    = goalCarbs
+        self.goalFat      = goalFat
+        let start = Calendar.current.startOfDay(for: Date())
+        let end   = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        _todayRecords = Query(filter: #Predicate<MealRecord> { $0.date >= start && $0.date < end })
+    }
+
+    private var totalCalories: Double { todayRecords.reduce(0) { $0 + $1.calories } }
+    private var totalProtein:  Double { todayRecords.reduce(0) { $0 + $1.protein  } }
+
+    var body: some View {
+        NavigationLink(destination: NutritionView()) {
+            VStack(spacing: 12) {
+                HStack {
+                    Text("今日營養")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.appTextSub)
+                    Spacer()
+                    Text("\(Int(totalCalories)) / \(goalCalories) kcal")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextMuted)
+                }
+
+                nutritionBar(value: totalCalories, goal: Double(goalCalories), color: .appRed, label: "熱量")
+                if goalProtein > 0 {
+                    nutritionBar(value: totalProtein, goal: Double(goalProtein), color: .appBlue, label: "蛋白質")
+                }
+            }
+            .padding(16)
+            .background(Color.appCard)
+            .cornerRadius(16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func nutritionBar(value: Double, goal: Double, color: Color, label: String) -> some View {
+        let pct = min(value / max(goal, 1), 1.0)
+        return VStack(spacing: 4) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 11))
+                    .foregroundColor(.appTextTert)
+                Spacer()
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3).fill(Color.appBorder).frame(height: 6)
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(value > goal ? Color.appRed : color)
+                        .frame(width: geo.size.width * pct, height: 6)
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+}
+
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: WorkoutBlock.self, WorkoutSet.self, BodyIndex.self, configurations: config)
+    let container = try! ModelContainer(for: WorkoutBlock.self, WorkoutSet.self, BodyIndex.self, Food.self, MealRecord.self, configurations: config)
     return NavigationStack {
         HomeView()
     }
     .modelContainer(container)
     .environment(WorkoutRepository(context: container.mainContext))
     .environment(BodyIndexRepository(context: container.mainContext))
+    .environment(FoodRepository(context: container.mainContext))
+    .environment(MealRepository(context: container.mainContext))
 }

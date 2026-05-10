@@ -3,10 +3,15 @@ import SwiftUI
 struct NutritionGoalsView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var calories = "2000"
-    @State private var protein = "150"
-    @State private var carbs = "250"
-    @State private var fat = "65"
+    @AppStorage("nutritionGoalCalories") private var goalCalories: Int = 0
+    @AppStorage("nutritionGoalProtein")  private var goalProtein:  Int = 0
+    @AppStorage("nutritionGoalCarbs")    private var goalCarbs:    Int = 0
+    @AppStorage("nutritionGoalFat")      private var goalFat:      Int = 0
+
+    @State private var caloriesStr = ""
+    @State private var proteinStr  = ""
+    @State private var carbsStr    = ""
+    @State private var fatStr      = ""
 
     var body: some View {
         ScrollView {
@@ -14,12 +19,16 @@ struct NutritionGoalsView: View {
                 navHeader
 
                 VStack(spacing: 16) {
-                    inputField(label: "每日熱量", unit: "kcal", value: $calories)
-                    inputField(label: "蛋白質",   unit: "g",    value: $protein)
-                    inputField(label: "碳水化合物", unit: "g",  value: $carbs)
-                    inputField(label: "脂肪",     unit: "g",    value: $fat)
+                    inputField(label: "每日熱量", unit: "kcal", value: $caloriesStr)
+                    inputField(label: "蛋白質",   unit: "g",    value: $proteinStr)
+                    inputField(label: "碳水化合物", unit: "g",  value: $carbsStr)
+                    inputField(label: "脂肪",     unit: "g",    value: $fatStr)
 
                     Button {
+                        goalCalories = Int(caloriesStr) ?? 0
+                        goalProtein  = Int(proteinStr)  ?? 0
+                        goalCarbs    = Int(carbsStr)    ?? 0
+                        goalFat      = Int(fatStr)      ?? 0
                         dismiss()
                     } label: {
                         Text("儲存")
@@ -42,15 +51,19 @@ struct NutritionGoalsView: View {
         .background(Color.appBackground)
         .scrollContentBackground(.hidden)
         .navigationBarHidden(true)
+        .onAppear {
+            caloriesStr = goalCalories > 0 ? "\(goalCalories)" : ""
+            proteinStr  = goalProtein  > 0 ? "\(goalProtein)"  : ""
+            carbsStr    = goalCarbs    > 0 ? "\(goalCarbs)"    : ""
+            fatStr      = goalFat      > 0 ? "\(goalFat)"      : ""
+        }
     }
 
     private var navHeader: some View {
         HStack {
             Button { dismiss() } label: {
                 ZStack {
-                    Circle()
-                        .fill(Color.appCard)
-                        .frame(width: 32, height: 32)
+                    Circle().fill(Color.appCard).frame(width: 32, height: 32)
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.appTextSub)
