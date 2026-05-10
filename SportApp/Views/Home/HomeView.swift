@@ -1,0 +1,301 @@
+import SwiftUI
+import SwiftData
+
+struct HomeView: View {
+    @Query private var allBlocks: [WorkoutBlock]
+    @Query(sort: \BodyIndex.date, order: .reverse) private var bodyRecords: [BodyIndex]
+
+    private let weekDayLabels = ["一", "二", "三", "四", "五", "六", "日"]
+    private let calendar = Calendar.current
+
+    // MARK: Computed
+
+    private var weekDates: [Date] {
+        let today = calendar.startOfDay(for: Date())
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday - 2 + 7) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today)!
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
+    }
+
+    private var todayIndex: Int {
+        let today = calendar.startOfDay(for: Date())
+        return weekDates.firstIndex { calendar.isDate($0, inSameDayAs: today) } ?? -1
+    }
+
+    private var trainedDateKeys: Set<String> {
+        let fmt = dateFmt
+        return Set(allBlocks.filter { !$0.sets.isEmpty }.map { fmt.string(from: $0.date) })
+    }
+
+    private var weekTrainingStatus: [Bool] {
+        let fmt = dateFmt
+        return weekDates.map { trainedDateKeys.contains(fmt.string(from: $0)) }
+    }
+
+    private var trainedDaysCount: Int { weekTrainingStatus.filter { $0 }.count }
+
+    private var latestBody: BodyIndex? { bodyRecords.first }
+
+    private let dateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    // MARK: Body
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                titleSection
+                weeklyTrainingCard
+                if let body = latestBody {
+                    bodyMetricsCard(record: body)
+                }
+                quickNavSection
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 24)
+            .padding(.bottom, 32)
+        }
+        .background(Color.appBackground)
+        .scrollContentBackground(.hidden)
+        .navigationBarHidden(true)
+    }
+
+    // MARK: Title
+
+    private var titleSection: some View {
+        HStack {
+            Text("運動紀錄")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.appText)
+            Spacer()
+        }
+    }
+
+    // MARK: Weekly Training Card
+
+    private var weeklyTrainingCard: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("本週訓練")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.appTextSub)
+                Spacer()
+                HStack(spacing: 2) {
+                    Text("\(trainedDaysCount)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.appEmerald)
+                    Text("/ 7 天")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextTert)
+                }
+            }
+
+            HStack(spacing: 0) {
+                ForEach(0..<7, id: \.self) { index in
+                    dayColumn(index: index, trained: weekTrainingStatus[index])
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.appCard)
+        .cornerRadius(16)
+    }
+
+    private func dayColumn(index: Int, trained: Bool) -> some View {
+        let isToday = index == todayIndex
+        return VStack(spacing: 6) {
+            Text(weekDayLabels[index])
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isToday ? .appTextSub : .appTextTert)
+
+            ZStack {
+                if isToday {
+                    Circle()
+                        .stroke(Color.appBlue, lineWidth: 2)
+                        .frame(width: 36, height: 36)
+                }
+                Circle()
+                    .fill(trained ? Color.appEmerald.opacity(0.2) : Color.clear)
+                    .overlay(
+                        Circle().stroke(
+                            trained ? Color.appEmerald.opacity(0.5) : Color.appBorder,
+                            lineWidth: 1
+                        )
+                    )
+                    .frame(width: 30, height: 30)
+                if trained {
+                    Circle()
+                        .fill(Color.appEmerald)
+                        .frame(width: 10, height: 10)
+                }
+            }
+            .frame(width: 36, height: 36)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: Body Metrics Card
+
+    private func resolveBody(_ keyPath: KeyPath<BodyIndex, Double?>) -> (value: Double, isFilled: Bool)? {
+        for (i, record) in bodyRecords.enumerated() {
+            if let v = record[keyPath: keyPath] {
+                return (v, i > 0)
+            }
+        }
+        return nil
+    }
+
+    private func bodyMetricsCard(record: BodyIndex) -> some View {
+        let displayFmt = DateFormatter()
+        displayFmt.locale = Locale(identifier: "zh_TW")
+        displayFmt.dateFormat = "yyyy-MM-dd"
+
+        let bodyFat = resolveBody(\.bodyFatPercentage)
+        let muscle  = resolveBody(\.skeletalMuscleWeight)
+
+        return NavigationLink(destination: BodyIndexView()) {
+            VStack(spacing: 12) {
+                HStack {
+                    Text("身體指標")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.appTextSub)
+                    Spacer()
+                    Text(displayFmt.string(from: record.date))
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextMuted)
+                }
+                HStack {
+                    bodyMetricItem(label: "體重",
+                                   value: fmtVal(record.weight),
+                                   unit: "kg",
+                                   color: .appBlue,
+                                   filled: false)
+                    bodyMetricItem(label: "體脂率",
+                                   value: bodyFat.map { fmtVal($0.value) } ?? "—",
+                                   unit: bodyFat != nil ? "%" : "",
+                                   color: .appOrange,
+                                   filled: bodyFat?.isFilled ?? false)
+                    bodyMetricItem(label: "骨骼肌",
+                                   value: muscle.map { fmtVal($0.value) } ?? "—",
+                                   unit: muscle != nil ? "kg" : "",
+                                   color: .appEmerald,
+                                   filled: muscle?.isFilled ?? false)
+                }
+            }
+            .padding(16)
+            .background(Color.appCard)
+            .cornerRadius(16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func bodyMetricItem(label: String, value: String, unit: String, color: Color, filled: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 3) {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(.appTextTert)
+                if filled {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 9))
+                        .foregroundColor(.appTextMuted)
+                }
+            }
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(value == "—" ? .appTextTert : (filled ? color.opacity(0.6) : color))
+                if !unit.isEmpty && value != "—" {
+                    Text(unit)
+                        .font(.system(size: 11))
+                        .foregroundColor(.appTextTert)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: Quick Nav
+
+    private var quickNavSection: some View {
+        VStack(spacing: 12) {
+            SectionLabel(text: "快速導航")
+            HStack(spacing: 12) {
+                NavigationLink(destination: BodyIndexView()) {
+                    quickNavCard(
+                        icon: "person.fill",
+                        iconColor: .appOrange,
+                        iconBg: Color.appOrange.opacity(0.15),
+                        title: "身體指標",
+                        subtitle: "體重、體脂率紀錄"
+                    )
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink(destination: WorkoutsView()) {
+                    quickNavCard(
+                        icon: "dumbbell.fill",
+                        iconColor: .appEmerald,
+                        iconBg: Color.appEmerald.opacity(0.15),
+                        title: "運動紀錄",
+                        subtitle: "追蹤訓練進度"
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func quickNavCard(icon: String, iconColor: Color, iconBg: Color, title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(iconBg)
+                    .frame(width: 40, height: 40)
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(iconColor)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.appText)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(.appTextTert)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appCard)
+        .cornerRadius(16)
+    }
+
+    // MARK: Helpers
+
+    private func fmtVal(_ v: Double) -> String {
+        v.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(v))"
+            : String(format: "%.1f", v)
+    }
+
+    private func fmtOpt(_ v: Double?) -> String {
+        guard let v else { return "—" }
+        return fmtVal(v)
+    }
+}
+
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: WorkoutBlock.self, WorkoutSet.self, BodyIndex.self, configurations: config)
+    return NavigationStack {
+        HomeView()
+    }
+    .modelContainer(container)
+    .environment(WorkoutRepository(context: container.mainContext))
+    .environment(BodyIndexRepository(context: container.mainContext))
+}
