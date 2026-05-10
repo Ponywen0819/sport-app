@@ -49,7 +49,7 @@ struct BodyIndexView: View {
                         .foregroundColor(.appTextTert)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    metricsGrid(record: latest)
+                    metricsGrid
                     trendSection
                     historySection
                 } else {
@@ -98,41 +98,80 @@ struct BodyIndexView: View {
 
     // MARK: Metrics Grid
 
-    private func metricsGrid(record: BodyIndex) -> some View {
-        let items: [(String, String, String, Color)] = [
-            ("體重",       fmtVal(record.weight),                  "kg",   .appBlue),
-            ("體脂率",     fmtOpt(record.bodyFatPercentage),       "%",    .appOrange),
-            ("骨骼肌重",   fmtOpt(record.skeletalMuscleWeight),    "kg",   .appEmerald),
-            ("內臟脂肪",   fmtOpt(record.visceralFatIndex),        "",     .appRed),
-            ("體脂重",     fmtOpt(record.bodyFatWeight),           "kg",   .appYellow),
-            ("基礎代謝",   fmtOpt(record.basalMetabolicRate),      "kcal", .appPurple),
-            ("蛋白質重",   fmtOpt(record.proteinWeight),           "kg",   Color(hex: "22d3ee")),
-            ("體內水分",   fmtOpt(record.totalWater),              "kg",   Color(hex: "38bdf8")),
-        ]
-
-        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            ForEach(items, id: \.0) { label, value, unit, color in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(label)
-                        .font(.system(size: 12))
-                        .foregroundColor(.appTextTert)
-                    HStack(alignment: .lastTextBaseline, spacing: 4) {
-                        Text(value)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(value == "—" ? .appTextTert : color)
-                        if !unit.isEmpty && value != "—" {
-                            Text(unit)
-                                .font(.system(size: 13))
-                                .foregroundColor(.appTextTert)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(Color.appCard)
-                .cornerRadius(16)
+    // Scan records (newest first) for the first non-nil value of a field.
+    // Returns (value, isFilled) where isFilled=true means it came from an older record.
+    private func resolve(_ keyPath: KeyPath<BodyIndex, Double?>) -> (value: Double, isFilled: Bool)? {
+        for (i, record) in records.enumerated() {
+            if let v = record[keyPath: keyPath] {
+                return (v, i > 0)
             }
         }
+        return nil
+    }
+
+    private var metricsGrid: some View {
+        typealias Item = (label: String, value: String, unit: String, color: Color, filled: Bool)
+
+        func item(_ label: String, _ v: Double, _ unit: String, _ color: Color) -> Item {
+            (label, fmtVal(v), unit, color, false)
+        }
+        func itemOpt(_ label: String, _ kp: KeyPath<BodyIndex, Double?>, _ unit: String, _ color: Color) -> Item {
+            if let r = resolve(kp) {
+                return (label, fmtVal(r.value), unit, color, r.isFilled)
+            }
+            return (label, "—", unit, color, false)
+        }
+
+        guard let latest = records.first else { return AnyView(EmptyView()) }
+
+        let items: [Item] = [
+            item   ("體重",     latest.weight,     "kg",   .appBlue),
+            itemOpt("體脂率",   \.bodyFatPercentage,  "%",    .appOrange),
+            itemOpt("骨骼肌重", \.skeletalMuscleWeight, "kg", .appEmerald),
+            itemOpt("內臟脂肪", \.visceralFatIndex,   "",     .appRed),
+            itemOpt("體脂重",   \.bodyFatWeight,      "kg",   .appYellow),
+            itemOpt("基礎代謝", \.basalMetabolicRate,  "kcal", .appPurple),
+            itemOpt("蛋白質重", \.proteinWeight,       "kg",   Color(hex: "22d3ee")),
+            itemOpt("體內水分", \.totalWater,          "kg",   Color(hex: "38bdf8")),
+        ]
+
+        return AnyView(
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(items, id: \.label) { it in
+                    metricCard(label: it.label, value: it.value,
+                                unit: it.unit, color: it.color, filled: it.filled)
+                }
+            }
+        )
+    }
+
+    private func metricCard(label: String, value: String, unit: String, color: Color, filled: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(.appTextTert)
+                if filled {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 9))
+                        .foregroundColor(.appTextMuted)
+                }
+            }
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(value == "—" ? .appTextTert : (filled ? color.opacity(0.6) : color))
+                if !unit.isEmpty && value != "—" {
+                    Text(unit)
+                        .font(.system(size: 13))
+                        .foregroundColor(.appTextTert)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.appCard)
+        .cornerRadius(16)
     }
 
     // MARK: Trend Chart

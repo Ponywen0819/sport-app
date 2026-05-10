@@ -52,3 +52,10 @@ prisma/dev.db
 
 playwright-report/
 test-results/
+# Xcode
+.DS_Store
+
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/

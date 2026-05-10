@@ -1,17 +1,58 @@
 import SwiftUI
+import SwiftData
 
 struct HomeView: View {
+    @Query private var allBlocks: [WorkoutBlock]
+    @Query(sort: \BodyIndex.date, order: .reverse) private var bodyRecords: [BodyIndex]
+
     private let weekDayLabels = ["一", "二", "三", "四", "五", "六", "日"]
-    private let trainedDays: Set<Int> = [0, 1, 3]
-    private let todayIndex = 4
+    private let calendar = Calendar.current
+
+    // MARK: Computed
+
+    private var weekDates: [Date] {
+        let today = calendar.startOfDay(for: Date())
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday - 2 + 7) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today)!
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
+    }
+
+    private var todayIndex: Int {
+        let today = calendar.startOfDay(for: Date())
+        return weekDates.firstIndex { calendar.isDate($0, inSameDayAs: today) } ?? -1
+    }
+
+    private var trainedDateKeys: Set<String> {
+        let fmt = dateFmt
+        return Set(allBlocks.filter { !$0.sets.isEmpty }.map { fmt.string(from: $0.date) })
+    }
+
+    private var weekTrainingStatus: [Bool] {
+        let fmt = dateFmt
+        return weekDates.map { trainedDateKeys.contains(fmt.string(from: $0)) }
+    }
+
+    private var trainedDaysCount: Int { weekTrainingStatus.filter { $0 }.count }
+
+    private var latestBody: BodyIndex? { bodyRecords.first }
+
+    private let dateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    // MARK: Body
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 titleSection
                 weeklyTrainingCard
-                todayNutritionCard
-                bodyMetricsCard
+                if let body = latestBody {
+                    bodyMetricsCard(record: body)
+                }
                 quickNavSection
             }
             .padding(.horizontal, 16)
@@ -23,7 +64,8 @@ struct HomeView: View {
         .navigationBarHidden(true)
     }
 
-    // MARK: - Title
+    // MARK: Title
+
     private var titleSection: some View {
         HStack {
             Text("運動紀錄")
@@ -33,7 +75,8 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Weekly Training Card
+    // MARK: Weekly Training Card
+
     private var weeklyTrainingCard: some View {
         VStack(spacing: 12) {
             HStack {
@@ -42,7 +85,7 @@ struct HomeView: View {
                     .foregroundColor(.appTextSub)
                 Spacer()
                 HStack(spacing: 2) {
-                    Text("3")
+                    Text("\(trainedDaysCount)")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.appEmerald)
                     Text("/ 7 天")
@@ -53,7 +96,7 @@ struct HomeView: View {
 
             HStack(spacing: 0) {
                 ForEach(0..<7, id: \.self) { index in
-                    dayColumn(index: index)
+                    dayColumn(index: index, trained: weekTrainingStatus[index])
                 }
             }
         }
@@ -62,23 +105,19 @@ struct HomeView: View {
         .cornerRadius(16)
     }
 
-    private func dayColumn(index: Int) -> some View {
-        let trained = trainedDays.contains(index)
+    private func dayColumn(index: Int, trained: Bool) -> some View {
         let isToday = index == todayIndex
-
         return VStack(spacing: 6) {
             Text(weekDayLabels[index])
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(isToday ? .appTextSub : .appTextTert)
 
             ZStack {
-                // Outer ring for today
                 if isToday {
                     Circle()
                         .stroke(Color.appBlue, lineWidth: 2)
                         .frame(width: 36, height: 36)
                 }
-                // Background
                 Circle()
                     .fill(trained ? Color.appEmerald.opacity(0.2) : Color.clear)
                     .overlay(
@@ -88,8 +127,6 @@ struct HomeView: View {
                         )
                     )
                     .frame(width: 30, height: 30)
-
-                // Dot
                 if trained {
                     Circle()
                         .fill(Color.appEmerald)
@@ -101,78 +138,52 @@ struct HomeView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Today Nutrition
-    private var todayNutritionCard: some View {
-        NavigationLink(destination: NutritionView()) {
-            VStack(spacing: 12) {
-                HStack {
-                    Text("今日營養")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.appTextSub)
-                    Spacer()
-                }
-                VStack(spacing: 8) {
-                    miniProgressRow(label: "熱量", current: 1650, goal: 2000, unit: "kcal", color: .appRed)
-                    miniProgressRow(label: "蛋白質", current: 120, goal: 150, unit: "g", color: .appBlue)
-                }
+    // MARK: Body Metrics Card
+
+    private func resolveBody(_ keyPath: KeyPath<BodyIndex, Double?>) -> (value: Double, isFilled: Bool)? {
+        for (i, record) in bodyRecords.enumerated() {
+            if let v = record[keyPath: keyPath] {
+                return (v, i > 0)
             }
-            .padding(16)
-            .background(Color.appCard)
-            .cornerRadius(16)
         }
-        .buttonStyle(.plain)
+        return nil
     }
 
-    private func miniProgressRow(label: String, current: Int, goal: Int, unit: String, color: Color) -> some View {
-        VStack(spacing: 4) {
-            HStack {
-                Text(label)
-                    .font(.system(size: 12))
-                    .foregroundColor(.appTextTert)
-                Spacer()
-                HStack(spacing: 2) {
-                    Text("\(current)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(color)
-                    Text("/ \(goal) \(unit)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.appTextMuted)
-                }
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.appBorder)
-                        .frame(height: 6)
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(color)
-                        .frame(
-                            width: geo.size.width * min(CGFloat(current) / CGFloat(goal), 1),
-                            height: 6
-                        )
-                }
-            }
-            .frame(height: 6)
-        }
-    }
+    private func bodyMetricsCard(record: BodyIndex) -> some View {
+        let displayFmt = DateFormatter()
+        displayFmt.locale = Locale(identifier: "zh_TW")
+        displayFmt.dateFormat = "yyyy-MM-dd"
 
-    // MARK: - Body Metrics
-    private var bodyMetricsCard: some View {
-        NavigationLink(destination: BodyIndexView()) {
+        let bodyFat = resolveBody(\.bodyFatPercentage)
+        let muscle  = resolveBody(\.skeletalMuscleWeight)
+
+        return NavigationLink(destination: BodyIndexView()) {
             VStack(spacing: 12) {
                 HStack {
                     Text("身體指標")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.appTextSub)
                     Spacer()
-                    Text("2025-05-01")
+                    Text(displayFmt.string(from: record.date))
                         .font(.system(size: 12))
                         .foregroundColor(.appTextMuted)
                 }
                 HStack {
-                    bodyMetric(label: "體重", value: "70.5", unit: "kg", color: .appBlue)
-                    bodyMetric(label: "體脂率", value: "18.5", unit: "%", color: .appOrange)
-                    bodyMetric(label: "骨骼肌", value: "35.2", unit: "kg", color: .appEmerald)
+                    bodyMetricItem(label: "體重",
+                                   value: fmtVal(record.weight),
+                                   unit: "kg",
+                                   color: .appBlue,
+                                   filled: false)
+                    bodyMetricItem(label: "體脂率",
+                                   value: bodyFat.map { fmtVal($0.value) } ?? "—",
+                                   unit: bodyFat != nil ? "%" : "",
+                                   color: .appOrange,
+                                   filled: bodyFat?.isFilled ?? false)
+                    bodyMetricItem(label: "骨骼肌",
+                                   value: muscle.map { fmtVal($0.value) } ?? "—",
+                                   unit: muscle != nil ? "kg" : "",
+                                   color: .appEmerald,
+                                   filled: muscle?.isFilled ?? false)
                 }
             }
             .padding(16)
@@ -182,36 +193,45 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    private func bodyMetric(label: String, value: String, unit: String, color: Color) -> some View {
+    private func bodyMetricItem(label: String, value: String, unit: String, color: Color, filled: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundColor(.appTextTert)
+            HStack(spacing: 3) {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(.appTextTert)
+                if filled {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 9))
+                        .foregroundColor(.appTextMuted)
+                }
+            }
             HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(value)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(color)
-                Text(unit)
-                    .font(.system(size: 11))
-                    .foregroundColor(.appTextTert)
+                    .foregroundColor(value == "—" ? .appTextTert : (filled ? color.opacity(0.6) : color))
+                if !unit.isEmpty && value != "—" {
+                    Text(unit)
+                        .font(.system(size: 11))
+                        .foregroundColor(.appTextTert)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Quick Nav
+    // MARK: Quick Nav
+
     private var quickNavSection: some View {
         VStack(spacing: 12) {
             SectionLabel(text: "快速導航")
-
             HStack(spacing: 12) {
-                NavigationLink(destination: NutritionView()) {
+                NavigationLink(destination: BodyIndexView()) {
                     quickNavCard(
-                        icon: "leaf.fill",
-                        iconColor: .appBlue,
-                        iconBg: Color.appBlue.opacity(0.15),
-                        title: "今日營養",
-                        subtitle: "查看飲食紀錄"
+                        icon: "person.fill",
+                        iconColor: .appOrange,
+                        iconBg: Color.appOrange.opacity(0.15),
+                        title: "身體指標",
+                        subtitle: "體重、體脂率紀錄"
                     )
                 }
                 .buttonStyle(.plain)
@@ -221,7 +241,7 @@ struct HomeView: View {
                         icon: "dumbbell.fill",
                         iconColor: .appEmerald,
                         iconBg: Color.appEmerald.opacity(0.15),
-                        title: "運動記錄",
+                        title: "運動紀錄",
                         subtitle: "追蹤訓練進度"
                     )
                 }
@@ -254,10 +274,28 @@ struct HomeView: View {
         .background(Color.appCard)
         .cornerRadius(16)
     }
+
+    // MARK: Helpers
+
+    private func fmtVal(_ v: Double) -> String {
+        v.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(v))"
+            : String(format: "%.1f", v)
+    }
+
+    private func fmtOpt(_ v: Double?) -> String {
+        guard let v else { return "—" }
+        return fmtVal(v)
+    }
 }
 
 #Preview {
-    NavigationStack {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: WorkoutBlock.self, WorkoutSet.self, BodyIndex.self, configurations: config)
+    return NavigationStack {
         HomeView()
     }
+    .modelContainer(container)
+    .environment(WorkoutRepository(context: container.mainContext))
+    .environment(BodyIndexRepository(context: container.mainContext))
 }
