@@ -1,18 +1,63 @@
 import SwiftUI
+import SwiftData
+
+// MARK: - Weight Unit
+
+enum WeightUnit: String, CaseIterable {
+    case pounds = "磅"
+    case kg = "kg"
+}
+
+// MARK: - Main View
 
 struct WorkoutsView: View {
     @State private var selectedDate = Date()
     @State private var displayUnit: WeightUnit = .pounds
+    @Query private var allBlocks: [WorkoutBlock]
+
+    private let calendar = Calendar.current
+
+    private var trainedDates: Set<String> {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        return Set(allBlocks.filter { !$0.sets.isEmpty }.map { fmt.string(from: $0.date) })
+    }
+
+    // Monday-indexed week containing today
+    private var weekDates: [Date] {
+        let today = calendar.startOfDay(for: Date())
+        let weekday = calendar.component(.weekday, from: today) // 1=Sun, 2=Mon...7=Sat
+        let daysFromMonday = (weekday - 2 + 7) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today)!
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
+    }
+
+    private var setsByDay: [Int?] {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        return weekDates.map { day in
+            let key = fmt.string(from: day)
+            let count = allBlocks
+                .filter { fmt.string(from: $0.date) == key }
+                .reduce(0) { $0 + $1.sets.count }
+            return count > 0 ? count : nil
+        }
+    }
+
+    private var todayIndex: Int {
+        let today = calendar.startOfDay(for: Date())
+        return weekDates.firstIndex { calendar.isDate($0, inSameDayAs: today) } ?? -1
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
                 titleSection
-                DateSelectorView(selectedDate: $selectedDate, trainedDates: ["2025-05-05", "2025-05-07"])
+                DateSelectorView(selectedDate: $selectedDate, trainedDates: trainedDates)
                     .padding(.horizontal, 16)
-                WeeklyWorkoutSummaryCard()
+                WeeklyWorkoutSummaryCard(setsByDay: setsByDay, todayIndex: todayIndex)
                     .padding(.horizontal, 16)
-                ExerciseTrackerCard(displayUnit: $displayUnit)
+                WorkoutDaySection(date: selectedDate, displayUnit: $displayUnit)
                     .padding(.horizontal, 16)
             }
             .padding(.bottom, 32)
@@ -35,19 +80,13 @@ struct WorkoutsView: View {
     }
 }
 
-// MARK: - Weight Unit
-
-enum WeightUnit: String, CaseIterable {
-    case pounds = "磅"
-    case kg = "kg"
-}
-
-// MARK: - Weekly Workout Summary
+// MARK: - Weekly Summary Card
 
 struct WeeklyWorkoutSummaryCard: View {
+    let setsByDay: [Int?]
+    let todayIndex: Int
+
     private let dayLabels = ["一", "二", "三", "四", "五", "六", "日"]
-    private let setsByDay: [Int?] = [3, 2, nil, 4, nil, nil, nil]
-    private let todayIndex = 3
 
     private var totalDays: Int { setsByDay.compactMap { $0 }.count }
     private var totalSets: Int { setsByDay.compactMap { $0 }.reduce(0, +) }
@@ -92,7 +131,6 @@ struct WeeklyWorkoutSummaryCard: View {
                                     .stroke(Color.appBlue, lineWidth: 1.5)
                                     .frame(width: 30, height: 30)
                             }
-
                             Circle()
                                 .fill(setsByDay[index] != nil ? Color.appEmeraldCTA : Color.clear)
                                 .overlay(
@@ -120,103 +158,88 @@ struct WeeklyWorkoutSummaryCard: View {
     }
 }
 
-// MARK: - Exercise Tracker
+// MARK: - Round Entry (RLE display)
 
-struct WorkoutBlock: Identifiable {
-    let id = UUID()
-    let exerciseName: String
-    let blockType: BlockType
-    let rounds: [WorkoutRound]
+private struct RoundEntry: Identifiable {
+    enum Kind {
+        case single(WorkoutSet)
+        case drop(normal: WorkoutSet, drop: WorkoutSet)
+        case superset(a: WorkoutSet, b: WorkoutSet)
+    }
+    let id: Int   // orderIndex of first set in group
+    let kind: Kind
+    let number: Int   // 1-based, of the first round in this group
+    let count: Int    // how many consecutive identical rounds are merged
+}
 
-    enum BlockType: String {
-        case single = "single"
-        case dropSet = "drop_set"
-        case superset = "superset"
-        case circuit = "circuit"
+// MARK: - Day Section (dynamic @Query per date)
 
-        var label: String {
-            switch self {
-            case .single: return "單一動作"
-            case .dropSet: return "Drop Set"
-            case .superset: return "Superset"
-            case .circuit: return "Circuit"
-            }
-        }
-
-        var badgeColor: Color {
-            switch self {
-            case .single: return .appBlue
-            case .dropSet: return .appOrange
-            case .superset: return .appEmerald
-            case .circuit: return .appPurple
-            }
+private enum DaySectionSheet: Identifiable {
+    case addBlock
+    case addSet(WorkoutBlock)
+    var id: String {
+        switch self {
+        case .addBlock:       return "addBlock"
+        case .addSet(let b):  return "addSet-\(ObjectIdentifier(b).hashValue)"
         }
     }
 }
 
-struct WorkoutRound: Identifiable {
-    let id = UUID()
-    let number: Int
-    let weight: Double
-    let reps: Int
-    let unit: String
-}
-
-struct ExerciseTrackerCard: View {
+struct WorkoutDaySection: View {
+    let date: Date
     @Binding var displayUnit: WeightUnit
+    @Query private var blocks: [WorkoutBlock]
+    @Environment(WorkoutRepository.self) private var repo
+    @State private var activeSheet: DaySectionSheet? = nil
 
-    private let blocks: [WorkoutBlock] = [
-        WorkoutBlock(
-            exerciseName: "臥推",
-            blockType: .single,
-            rounds: [
-                WorkoutRound(number: 1, weight: 100, reps: 8, unit: "磅"),
-                WorkoutRound(number: 2, weight: 100, reps: 8, unit: "磅"),
-                WorkoutRound(number: 3, weight: 100, reps: 6, unit: "磅"),
-            ]
-        ),
-        WorkoutBlock(
-            exerciseName: "深蹲",
-            blockType: .single,
-            rounds: [
-                WorkoutRound(number: 1, weight: 120, reps: 10, unit: "磅"),
-                WorkoutRound(number: 2, weight: 120, reps: 10, unit: "磅"),
-            ]
-        ),
-    ]
+    init(date: Date, displayUnit: Binding<WeightUnit>) {
+        self.date = date
+        self._displayUnit = displayUnit
+        let start = Calendar.current.startOfDay(for: date)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        _blocks = Query(
+            filter: #Predicate<WorkoutBlock> { block in
+                block.date >= start && block.date < end
+            },
+            sort: \.orderIndex
+        )
+    }
 
-    private var totalSets: Int { blocks.reduce(0) { $0 + $1.rounds.count } }
-    private var exerciseCount: Int { blocks.count }
+    private var totalSets: Int { blocks.reduce(0) { $0 + $1.sets.count } }
+
+    private var sectionTitle: String {
+        if Calendar.current.isDateInToday(date) { return "今日訓練" }
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "zh_TW")
+        fmt.dateFormat = "M月d日訓練"
+        return fmt.string(from: date)
+    }
 
     var body: some View {
         VStack(spacing: 12) {
-            // Toolbar
-            HStack {
-                Text("共 \(exerciseCount) 個動作 · \(totalSets) 組")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.appTextSub)
-                Spacer()
-                unitToggle
+            if !blocks.isEmpty {
+                HStack {
+                    Text("共 \(blocks.count) 個動作 · \(totalSets) 組")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.appTextSub)
+                    Spacer()
+                    unitToggle
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color.appCard)
+                .cornerRadius(16)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color.appCard)
-            .cornerRadius(16)
 
-            // Today's workout card
             VStack(spacing: 0) {
                 HStack {
-                    Text("今日訓練")
+                    Text(sectionTitle)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.appText)
                     Spacer()
-                    Button {
-                        // Add exercise
-                    } label: {
+                    Button { activeSheet = .addBlock } label: {
                         ZStack {
-                            Circle()
-                                .fill(Color.appBorder)
-                                .frame(width: 40, height: 40)
+                            Circle().fill(Color.appBorder).frame(width: 40, height: 40)
                             Image(systemName: "plus")
                                 .font(.system(size: 18))
                                 .foregroundColor(.appTextSub)
@@ -226,21 +249,46 @@ struct ExerciseTrackerCard: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
 
-                Divider()
-                    .background(Color.appBorder.opacity(0.5))
-
-                ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
-                    workoutBlockRow(block: block)
-
-                    if index < blocks.count - 1 {
-                        Divider()
-                            .background(Color.appBorder.opacity(0.5))
+                if blocks.isEmpty {
+                    emptyState
+                } else {
+                    Divider().background(Color.appBorder.opacity(0.5))
+                    ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
+                        workoutBlockRow(block: block)
+                        if index < blocks.count - 1 {
+                            Divider().background(Color.appBorder.opacity(0.5))
+                        }
                     }
                 }
             }
             .background(Color.appCard)
             .cornerRadius(16)
         }
+        .sheet(item: $activeSheet) { target in
+            switch target {
+            case .addBlock:
+                AddBlockSheet(date: date, orderIndex: blocks.count, displayUnit: displayUnit)
+            case .addSet(let block):
+                switch block.type {
+                case .dropSet:   AddDropSetSheet(block: block, displayUnit: displayUnit)
+                case .superset:  AddSupersetSetSheet(block: block, displayUnit: displayUnit)
+                default:         AddSetSheet(block: block, displayUnit: displayUnit)
+                }
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "dumbbell")
+                .font(.system(size: 36))
+                .foregroundColor(.appTextTert)
+            Text("尚無紀錄，點擊 + 新增動作")
+                .font(.system(size: 14))
+                .foregroundColor(.appTextTert)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
     }
 
     private var unitToggle: some View {
@@ -267,22 +315,38 @@ struct ExerciseTrackerCard: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(block.exerciseName)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.appText)
+                        // Superset: show both exercise names stacked
+                        if block.type == .superset, let name2 = block.exerciseName2 {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(block.exerciseName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.appText)
+                                Text(name2)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.appText)
+                            }
+                        } else {
+                            Text(block.exerciseName)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.appText)
+                        }
 
-                        if block.blockType != .single {
-                            Text(block.blockType.label)
+                        if block.type != .single {
+                            let t = block.type
+                            Text(t.label)
                                 .font(.system(size: 11))
-                                .foregroundColor(block.blockType.badgeColor)
+                                .foregroundColor(t.badgeColor)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(block.blockType.badgeColor.opacity(0.15))
+                                .background(t.badgeColor.opacity(0.15))
                                 .cornerRadius(100)
                         }
                     }
 
-                    Text("\(block.rounds.count) 回合 · \(block.rounds.count) 筆 set")
+                    let roundCount = block.type == .superset
+                        ? block.sets.count / 2
+                        : (block.type == .dropSet ? block.sets.filter { $0.type != .drop }.count : block.sets.count)
+                    Text("\(roundCount) 回合")
                         .font(.system(size: 12))
                         .foregroundColor(.appTextTert)
                 }
@@ -290,15 +354,21 @@ struct ExerciseTrackerCard: View {
                 Spacer()
 
                 HStack(spacing: 8) {
-                    iconButton(systemName: "line.3.horizontal", color: .appTextTert)
-                    iconButton(systemName: "plus", color: .appTextTert)
-                    iconButton(systemName: "trash", color: .appTextTert)
+                    iconButton(systemName: "plus", color: .appTextTert) {
+                        activeSheet = .addSet(block)
+                    }
+                    iconButton(systemName: "trash", color: .appTextTert) {
+                        try? repo.deleteBlock(block)
+                    }
                 }
             }
 
-            VStack(spacing: 8) {
-                ForEach(block.rounds) { round in
-                    roundRow(round: round)
+            if !block.sets.isEmpty {
+                let entries = roundEntries(for: block)
+                VStack(spacing: 8) {
+                    ForEach(entries) { entry in
+                        roundRow(entry: entry, block: block)
+                    }
                 }
             }
         }
@@ -306,13 +376,46 @@ struct ExerciseTrackerCard: View {
         .padding(.vertical, 14)
     }
 
-    private func roundRow(round: WorkoutRound) -> some View {
-        HStack {
-            Text("第 \(round.number) 回合")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.appTextTert)
+    private func setRow(set: WorkoutSet, number: Int, count: Int, block: WorkoutBlock) -> some View {
+        let weightText = displayUnit == .pounds
+            ? "\(Int((set.weightKg * 2.20462).rounded())) 磅"
+            : "\(Int(set.weightKg)) kg"
+
+        let exerciseLabel: String? = block.type == .superset
+            ? (set.orderIndex % 2 == 0 ? block.exerciseName : block.exerciseName2)
+            : nil
+
+        return HStack {
+            HStack(spacing: 6) {
+                Text("第 \(number) 組")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.appTextTert)
+                if count > 1 {
+                    Text("×\(count)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.appBlue)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.appBlue.opacity(0.15))
+                        .cornerRadius(100)
+                }
+                if let exName = exerciseLabel {
+                    Text(exName)
+                        .font(.system(size: 11))
+                        .foregroundColor(.appEmerald)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.appEmerald.opacity(0.15))
+                        .cornerRadius(100)
+                } else if let label = set.type.label {
+                    Text(label)
+                        .font(.system(size: 11))
+                        .foregroundColor(.appOrange)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.appOrange.opacity(0.15))
+                        .cornerRadius(100)
+                }
+            }
             Spacer()
-            Text("\(Int(round.weight)) \(displayUnit.rawValue) · \(round.reps) 下")
+            Text("\(weightText) · \(set.reps) 下")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.appTextSub)
         }
@@ -322,14 +425,167 @@ struct ExerciseTrackerCard: View {
         .cornerRadius(12)
     }
 
-    private func iconButton(systemName: String, color: Color) -> some View {
-        ZStack {
-            Circle()
-                .fill(Color.appBackground.opacity(0.45))
-                .frame(width: 36, height: 36)
-            Image(systemName: systemName)
-                .font(.system(size: 15))
-                .foregroundColor(color)
+    private func supersetRoundRow(setA: WorkoutSet, setB: WorkoutSet, number: Int, count: Int, block: WorkoutBlock) -> some View {
+        func wStr(_ kg: Double) -> String {
+            displayUnit == .pounds
+                ? "\(Int((kg * 2.20462).rounded())) 磅"
+                : "\(Int(kg)) kg"
+        }
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("第 \(number) 回合")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.appTextTert)
+                if count > 1 {
+                    Text("×\(count)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.appBlue)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.appBlue.opacity(0.15))
+                        .cornerRadius(100)
+                }
+            }
+            HStack {
+                Text(block.exerciseName)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.appEmerald)
+                Spacer()
+                Text("\(wStr(setA.weightKg)) · \(setA.reps) 下")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.appTextSub)
+            }
+            HStack {
+                Text(block.exerciseName2 ?? "")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.appBlue)
+                Spacer()
+                Text("\(wStr(setB.weightKg)) · \(setB.reps) 下")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.appTextSub)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appBackground.opacity(0.45))
+        .cornerRadius(12)
+    }
+
+    private func dropSetRoundRow(normal: WorkoutSet, drop: WorkoutSet, number: Int, count: Int) -> some View {
+        func wStr(_ kg: Double) -> String {
+            displayUnit == .pounds
+                ? "\(Int((kg * 2.20462).rounded())) 磅"
+                : "\(Int(kg)) kg"
+        }
+        return HStack {
+            HStack(spacing: 6) {
+                Text("第 \(number) 回合")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.appTextTert)
+                if count > 1 {
+                    Text("×\(count)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.appBlue)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.appBlue.opacity(0.15))
+                        .cornerRadius(100)
+                }
+            }
+            Spacer()
+            HStack(spacing: 6) {
+                Text("\(wStr(normal.weightKg)) \(normal.reps)下")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.appTextSub)
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.appOrange)
+                Text("\(wStr(drop.weightKg)) \(drop.reps)下")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.appOrange)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appBackground.opacity(0.45))
+        .cornerRadius(12)
+    }
+
+    // MARK: RLE helpers
+
+    private func roundEntries(for block: WorkoutBlock) -> [RoundEntry] {
+        let sorted = block.sets.sorted { $0.orderIndex < $1.orderIndex }
+        var raw: [(kind: RoundEntry.Kind, id: Int)] = []
+
+        switch block.type {
+        case .single:
+            raw = sorted.map { (.single($0), $0.orderIndex) }
+        case .dropSet:
+            let pairs = stride(from: 0, to: sorted.count - 1, by: 2)
+                .map { (sorted[$0], sorted[$0 + 1]) }
+            raw = pairs.map { (.drop(normal: $0.0, drop: $0.1), $0.0.orderIndex) }
+            if sorted.count % 2 != 0, let last = sorted.last {
+                raw.append((.single(last), last.orderIndex))
+            }
+        case .superset:
+            let pairs = stride(from: 0, to: sorted.count - 1, by: 2)
+                .map { (sorted[$0], sorted[$0 + 1]) }
+            raw = pairs.map { (.superset(a: $0.0, b: $0.1), $0.0.orderIndex) }
+            if sorted.count % 2 != 0, let last = sorted.last {
+                raw.append((.single(last), last.orderIndex))
+            }
+        }
+
+        var result: [RoundEntry] = []
+        var i = 0
+        var roundNum = 1
+        while i < raw.count {
+            var count = 1
+            while i + count < raw.count && roundKindIdentical(raw[i].kind, raw[i + count].kind) {
+                count += 1
+            }
+            result.append(RoundEntry(id: raw[i].id, kind: raw[i].kind, number: roundNum, count: count))
+            roundNum += count
+            i += count
+        }
+        return result
+    }
+
+    private func roundKindIdentical(_ a: RoundEntry.Kind, _ b: RoundEntry.Kind) -> Bool {
+        switch (a, b) {
+        case (.single(let s1), .single(let s2)):
+            return s1.weightKg == s2.weightKg && s1.reps == s2.reps && s1.setType == s2.setType
+        case (.drop(let n1, let d1), .drop(let n2, let d2)):
+            return n1.weightKg == n2.weightKg && n1.reps == n2.reps
+                && d1.weightKg == d2.weightKg && d1.reps == d2.reps
+        case (.superset(let a1, let b1), .superset(let a2, let b2)):
+            return a1.weightKg == a2.weightKg && a1.reps == a2.reps
+                && b1.weightKg == b2.weightKg && b1.reps == b2.reps
+        default:
+            return false
+        }
+    }
+
+    @ViewBuilder
+    private func roundRow(entry: RoundEntry, block: WorkoutBlock) -> some View {
+        switch entry.kind {
+        case .single(let set):
+            setRow(set: set, number: entry.number, count: entry.count, block: block)
+        case .drop(let normal, let drop):
+            dropSetRoundRow(normal: normal, drop: drop, number: entry.number, count: entry.count)
+        case .superset(let a, let b):
+            supersetRoundRow(setA: a, setB: b, number: entry.number, count: entry.count, block: block)
+        }
+    }
+
+    private func iconButton(systemName: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(Color.appBackground.opacity(0.45))
+                    .frame(width: 36, height: 36)
+                Image(systemName: systemName)
+                    .font(.system(size: 15))
+                    .foregroundColor(color)
+            }
         }
     }
 }
@@ -338,4 +594,5 @@ struct ExerciseTrackerCard: View {
     NavigationStack {
         WorkoutsView()
     }
+    .modelContainer(for: [WorkoutBlock.self, WorkoutSet.self], inMemory: true)
 }

@@ -7,7 +7,7 @@ struct SportAppApp: App {
 
     init() {
         do {
-            container = try ModelContainer(for: Exercise.self)
+            container = try ModelContainer(for: Exercise.self, WorkoutBlock.self, WorkoutSet.self)
             let repo = ExerciseRepository(context: container.mainContext)
             try? repo.seedIfNeeded()
         } catch {
@@ -20,6 +20,7 @@ struct SportAppApp: App {
             ContentView()
                 .modelContainer(container)
                 .environment(ExerciseRepository(context: container.mainContext))
+                .environment(WorkoutRepository(context: container.mainContext))
         }
     }
 }
