@@ -82,13 +82,16 @@ struct ProfileView: View {
     private var appSection: some View {
         VStack(spacing: 8) {
             SectionLabel(text: "應用程式")
-            settingsRowPlain(
-                icon: "link",
-                iconColor: .appTextSub,
-                iconBg: Color.appBorder,
-                title: "Notion 連接設定",
-                description: "API Token 與資料庫 ID"
-            )
+            NavigationLink(destination: NotionImportView()) {
+                settingsRow(
+                    icon: "arrow.down.circle.fill",
+                    iconColor: .appTextSub,
+                    iconBg: Color.appBorder,
+                    title: "匯入 Notion 資料",
+                    description: "從舊版 Notion 資料庫匯入歷史紀錄"
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 
