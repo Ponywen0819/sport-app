@@ -4,5 +4,9 @@
 <dict>
 	<key>UIBackgroundModes</key>
 	<array/>
+	<key>NSCameraUsageDescription</key>
+	<string>拍攝身體組成量測儀器的螢幕，透過 AI 自動填入數值</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>選取身體組成量測儀器的照片，透過 AI 自動填入數值</string>
 </dict>
 </plist>

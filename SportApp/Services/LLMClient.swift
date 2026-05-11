@@ -34,6 +34,27 @@ struct LLMCompletion {
     }
 }
 
+// MARK: - Response Schema
+
+/// OpenAI-compatible structured-output schema.
+/// When provided, the model is constrained to return JSON that matches the schema exactly.
+struct LLMResponseSchema {
+    let name:   String
+    let strict: Bool
+    let schema: [String: Any]
+
+    var asResponseFormat: [String: Any] {
+        [
+            "type": "json_schema",
+            "json_schema": [
+                "name":   name,
+                "strict": strict,
+                "schema": schema
+            ] as [String: Any]
+        ]
+    }
+}
+
 // MARK: - Errors
 
 enum LLMError: LocalizedError {
@@ -95,6 +116,41 @@ final class LLMClient {
     func chat(_ text: String, maxTokens: Int = 1024) async throws -> String {
         let completion = try await complete(messages: [.user(text)], maxTokens: maxTokens)
         return completion.content
+    }
+
+    func completeWithImage(
+        prompt:    String,
+        imageData: Data,
+        mimeType:  String              = "image/jpeg",
+        schema:    LLMResponseSchema?  = nil,
+        maxTokens: Int                 = 1024
+    ) async throws -> LLMCompletion {
+        let url    = try resolveURL()
+        let base64 = imageData.base64EncodedString()
+
+        let content: [[String: Any]] = [
+            ["type": "image_url",
+             "image_url": ["url": "data:\(mimeType);base64,\(base64)"]],
+            ["type": "text", "text": prompt]
+        ]
+        var body: [String: Any] = [
+            "model":      config.model,
+            "max_tokens": maxTokens,
+            "messages":   [["role": "user", "content": content]]
+        ]
+        if let schema {
+            body["response_format"] = schema.asResponseFormat
+        }
+
+        var req = URLRequest(url: url, timeoutInterval: 60)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json",         forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+        try validate(response: response, data: data)
+        return try decode(data: data)
     }
 
     // MARK: Factory
