@@ -239,64 +239,20 @@ struct LLMSettingsView: View {
     }
 
     private func runTest() {
-        let key      = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        let base     = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
-        let model    = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !key.isEmpty, !base.isEmpty, !model.isEmpty else { return }
-
+        let client = LLMClient(config: LLMConfig(
+            apiKey:  apiKey.trimmingCharacters(in: .whitespacesAndNewlines),
+            baseURL: endpoint.trimmingCharacters(in: .whitespacesAndNewlines),
+            model:   modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        ))
         testState = .loading
-
         Task { @MainActor in
             do {
-                let reply = try await sendHi(key: key, base: base, model: model)
+                let reply = try await client.chat("hi", maxTokens: 256)
                 testState = .success(reply)
             } catch {
                 testState = .failure(error.localizedDescription)
             }
         }
-    }
-
-    private func sendHi(key: String, base: String, model: String) async throws -> String {
-        let urlStr = base.hasSuffix("/") ? "\(base)chat/completions" : "\(base)/chat/completions"
-        guard let url = URL(string: urlStr) else {
-            throw URLError(.badURL)
-        }
-
-        let body: [String: Any] = [
-            "model":      model,
-            "max_tokens": 256,
-            "messages":   [["role": "user", "content": "hi"]]
-        ]
-
-        var req = URLRequest(url: url, timeoutInterval: 30)
-        req.httpMethod = "POST"
-        req.setValue("Bearer \(key)",    forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (data, response) = try await URLSession.shared.data(for: req)
-
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        guard http.statusCode == 200 else {
-            let preview = String(data: data.prefix(300), encoding: .utf8) ?? "（無法解析）"
-            throw NSError(domain: "LLM", code: http.statusCode,
-                          userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode): \(preview)"])
-        }
-
-        // OpenAI-compatible response shape
-        struct Response: Decodable {
-            struct Choice: Decodable {
-                struct Message: Decodable { let content: String }
-                let message: Message
-            }
-            let choices: [Choice]
-        }
-
-        let decoded = try JSONDecoder().decode(Response.self, from: data)
-        return decoded.choices.first?.message.content ?? "（空回覆）"
     }
 }
 
