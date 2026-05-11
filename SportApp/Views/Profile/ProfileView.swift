@@ -82,6 +82,16 @@ struct ProfileView: View {
     private var appSection: some View {
         VStack(spacing: 8) {
             SectionLabel(text: "應用程式")
+            NavigationLink(destination: LLMSettingsView()) {
+                settingsRow(
+                    icon: "cpu",
+                    iconColor: .appPurple,
+                    iconBg: Color.appPurple.opacity(0.15),
+                    title: "LLM API 設定",
+                    description: "設定 API Key、Endpoint 與模型名稱"
+                )
+            }
+            .buttonStyle(.plain)
             NavigationLink(destination: NotionImportView()) {
                 settingsRow(
                     icon: "arrow.down.circle.fill",

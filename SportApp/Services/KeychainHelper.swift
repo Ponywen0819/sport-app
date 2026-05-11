@@ -2,11 +2,10 @@ import Foundation
 import Security
 
 enum KeychainHelper {
-    private static let service = "com.sportapp.notion"
-    private static let account = "integration_token"
+    private static let service = "com.sportapp"
 
-    static func saveToken(_ token: String) {
-        let data = Data(token.utf8)
+    static func save(_ value: String, account: String) {
+        let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String:       kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -17,7 +16,7 @@ enum KeychainHelper {
         SecItemAdd(query as CFDictionary, nil)
     }
 
-    static func loadToken() -> String? {
+    static func load(account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String:       kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -31,7 +30,7 @@ enum KeychainHelper {
         return String(data: data, encoding: .utf8)
     }
 
-    static func deleteToken() {
+    static func delete(account: String) {
         let query: [String: Any] = [
             kSecClass as String:       kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -39,4 +38,14 @@ enum KeychainHelper {
         ]
         SecItemDelete(query as CFDictionary)
     }
+
+    // MARK: Named helpers
+
+    static func saveToken(_ token: String)  { save(token, account: "notion_token") }
+    static func loadToken() -> String?      { load(account: "notion_token") }
+    static func deleteToken()               { delete(account: "notion_token") }
+
+    static func saveLLMKey(_ key: String)   { save(key, account: "llm_api_key") }
+    static func loadLLMKey() -> String?     { load(account: "llm_api_key") }
+    static func deleteLLMKey()              { delete(account: "llm_api_key") }
 }
