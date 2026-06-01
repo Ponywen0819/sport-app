@@ -178,11 +178,10 @@ struct WorkoutDaySection: View {
     @Query private var blocks: [WorkoutBlock]
     @Environment(WorkoutRepository.self) private var repo
     @State private var activeSheet: DaySectionSheet? = nil
-    @State private var draggedBlock: WorkoutBlock? = nil
-    @State private var previewBlocks: [WorkoutBlock] = []
+    @State private var reorder = BlockReorderCoordinator()
 
     private var renderedBlocks: [WorkoutBlock] {
-        (draggedBlock != nil && !previewBlocks.isEmpty) ? previewBlocks : blocks
+        reorder.isReordering ? reorder.previewBlocks : blocks
     }
 
     init(date: Date, displayUnit: Binding<WeightUnit>) {
@@ -256,10 +255,7 @@ struct WorkoutDaySection: View {
             }
             .background(Color.appCard)
             .cornerRadius(16)
-            .onDrop(of: [UTType.text], delegate: ResetReorderDropDelegate(
-                draggedBlock: $draggedBlock,
-                previewBlocks: $previewBlocks
-            ))
+            .onDrop(of: [UTType.text], delegate: BlockReorderCancelDropDelegate(coordinator: reorder))
         }
         .sheet(item: $activeSheet) { target in
             switch target {
@@ -309,7 +305,7 @@ struct WorkoutDaySection: View {
 
     private func workoutBlockRow(block: WorkoutBlock, index: Int) -> some View {
         workoutBlockBody(block: block)
-            .opacity(draggedBlock?.id == block.id ? 0 : 1)
+            .opacity(reorder.draggedBlock?.id == block.id ? 0 : 1)
             .contentShape(Rectangle())
             .onDrag {
                 NSItemProvider(object: NSString(string: "\(block.persistentModelID.hashValue)"))
@@ -319,14 +315,12 @@ struct WorkoutDaySection: View {
                     .background(Color.appCard)
                     .cornerRadius(12)
                     .onAppear {
-                        draggedBlock  = block
-                        previewBlocks = blocks
+                        reorder.begin(dragging: block, snapshot: blocks)
                     }
             }
             .onDrop(of: [UTType.text], delegate: BlockReorderDropDelegate(
                 target: block,
-                draggedBlock: $draggedBlock,
-                previewBlocks: $previewBlocks,
+                coordinator: reorder,
                 onCommit: { ordered in
                     try? repo.reorderBlocks(ordered)
                 }
@@ -555,62 +549,6 @@ struct WorkoutDaySection: View {
                     .foregroundColor(color)
             }
         }
-    }
-}
-
-// MARK: - Drag-to-reorder Drop Delegates
-
-private struct BlockReorderDropDelegate: DropDelegate {
-    let target: WorkoutBlock
-    @Binding var draggedBlock: WorkoutBlock?
-    @Binding var previewBlocks: [WorkoutBlock]
-    let onCommit: ([WorkoutBlock]) -> Void
-
-    func dropEntered(info: DropInfo) {
-        guard let dragged = draggedBlock,
-              dragged.id != target.id,
-              let from = previewBlocks.firstIndex(where: { $0.id == dragged.id }),
-              let to   = previewBlocks.firstIndex(where: { $0.id == target.id }),
-              previewBlocks[to].id != dragged.id
-        else { return }
-
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-            let item = previewBlocks.remove(at: from)
-            previewBlocks.insert(item, at: to)
-        }
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        onCommit(previewBlocks)
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-            draggedBlock  = nil
-            previewBlocks = []
-        }
-        return true
-    }
-}
-
-// Catch-all on the day-section container. Fires when the user drops on
-// whitespace inside the card (between rows, on the header, etc.) — resets
-// the preview state so the UI snaps back to the on-disk order.
-private struct ResetReorderDropDelegate: DropDelegate {
-    @Binding var draggedBlock: WorkoutBlock?
-    @Binding var previewBlocks: [WorkoutBlock]
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-            draggedBlock  = nil
-            previewBlocks = []
-        }
-        return false
     }
 }
 
