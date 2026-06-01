@@ -118,23 +118,7 @@ struct AddStandardSetSheet: View {
         }
     }
 
-    private var roundNumber: Int {
-        // Count distinct rounds already in this block (mixed-aware)
-        let sorted = block.sets.sorted { $0.orderIndex < $1.orderIndex }
-        var rounds = 0
-        var i = 0
-        while i < sorted.count {
-            if sorted[i].type == .normal,
-               i + 1 < sorted.count,
-               sorted[i + 1].type == .drop {
-                i += 2
-            } else {
-                i += 1
-            }
-            rounds += 1
-        }
-        return rounds + 1
-    }
+    private var roundNumber: Int { roundCount(for: block) + 1 }
 
     // MARK: - Body
 
