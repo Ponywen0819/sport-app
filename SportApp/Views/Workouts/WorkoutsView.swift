@@ -282,9 +282,8 @@ struct WorkoutDaySection: View {
             case .addSet(let block):
                 let unit = repo.preferredUnit(for: block) ?? displayUnit
                 switch block.type {
-                case .dropSet:   AddDropSetSheet(block: block, displayUnit: unit)
                 case .superset:  AddSupersetSetSheet(block: block, displayUnit: unit)
-                default:         AddSetSheet(block: block, displayUnit: unit)
+                default:         AddStandardSetSheet(block: block, displayUnit: unit)
                 }
             }
         }
@@ -369,7 +368,7 @@ struct WorkoutDaySection: View {
                                 .foregroundColor(.appText)
                         }
 
-                        if block.type != .single {
+                        if block.type == .superset {
                             let t = block.type
                             Text(t.label)
                                 .font(.system(size: 11))
@@ -383,7 +382,7 @@ struct WorkoutDaySection: View {
 
                     let roundCount = block.type == .superset
                         ? block.sets.count / 2
-                        : (block.type == .dropSet ? block.sets.filter { $0.type != .drop }.count : block.sets.count)
+                        : roundEntries(for: block).count
                     Text("\(roundCount) 回合")
                         .font(.system(size: 12))
                         .foregroundColor(.appTextTert)
@@ -554,14 +553,21 @@ struct WorkoutDaySection: View {
         var raw: [(kind: RoundEntry.Kind, id: Int)] = []
 
         switch block.type {
-        case .single:
-            raw = sorted.map { (.single($0), $0.orderIndex) }
-        case .dropSet:
-            let pairs = stride(from: 0, to: sorted.count - 1, by: 2)
-                .map { (sorted[$0], sorted[$0 + 1]) }
-            raw = pairs.map { (.drop(normal: $0.0, drop: $0.1), $0.0.orderIndex) }
-            if sorted.count % 2 != 0, let last = sorted.last {
-                raw.append((.single(last), last.orderIndex))
+        case .single, .dropSet:
+            // Mixed-aware: a normal followed by a drop is a drop round; otherwise single.
+            // Lets a block hold any sequence like [n, n, n, n, d] = 3 singles + 1 drop round.
+            var i = 0
+            while i < sorted.count {
+                let cur = sorted[i]
+                if cur.type == .normal,
+                   i + 1 < sorted.count,
+                   sorted[i + 1].type == .drop {
+                    raw.append((.drop(normal: cur, drop: sorted[i + 1]), cur.orderIndex))
+                    i += 2
+                } else {
+                    raw.append((.single(cur), cur.orderIndex))
+                    i += 1
+                }
             }
         case .superset:
             let pairs = stride(from: 0, to: sorted.count - 1, by: 2)
