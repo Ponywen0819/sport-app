@@ -586,16 +586,24 @@ struct WorkoutDaySection: View {
         return result
     }
 
+    // Compare at display resolution (rounded pounds) so two rounds that look
+    // identical on screen merge even if their stored kg values drift by ~%.1f
+    // worth of unit-conversion rounding (e.g. user toggled display unit between
+    // entries, leaving 45.359 kg vs 45.4 kg — both render as "100 磅").
+    private func sameDisplayedWeight(_ a: Double, _ b: Double) -> Bool {
+        Int((a * 2.20462).rounded()) == Int((b * 2.20462).rounded())
+    }
+
     private func roundKindIdentical(_ a: RoundEntry.Kind, _ b: RoundEntry.Kind) -> Bool {
         switch (a, b) {
         case (.single(let s1), .single(let s2)):
-            return s1.weightKg == s2.weightKg && s1.reps == s2.reps && s1.setType == s2.setType
+            return sameDisplayedWeight(s1.weightKg, s2.weightKg) && s1.reps == s2.reps && s1.setType == s2.setType
         case (.drop(let n1, let d1), .drop(let n2, let d2)):
-            return n1.weightKg == n2.weightKg && n1.reps == n2.reps
-                && d1.weightKg == d2.weightKg && d1.reps == d2.reps
+            return sameDisplayedWeight(n1.weightKg, n2.weightKg) && n1.reps == n2.reps
+                && sameDisplayedWeight(d1.weightKg, d2.weightKg) && d1.reps == d2.reps
         case (.superset(let a1, let b1), .superset(let a2, let b2)):
-            return a1.weightKg == a2.weightKg && a1.reps == a2.reps
-                && b1.weightKg == b2.weightKg && b1.reps == b2.reps
+            return sameDisplayedWeight(a1.weightKg, a2.weightKg) && a1.reps == a2.reps
+                && sameDisplayedWeight(b1.weightKg, b2.weightKg) && b1.reps == b2.reps
         default:
             return false
         }
