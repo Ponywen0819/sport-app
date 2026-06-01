@@ -494,6 +494,7 @@ struct AddBlockSheet: View {
         for i in 0..<singleSets {
             try? repo.addSet(WorkoutSet(orderIndex: i, weightKg: kg, reps: r), to: block)
         }
+        try? repo.setPreferredUnit(inputUnit, for: block)
         dismiss()
     }
 
@@ -504,6 +505,7 @@ struct AddBlockSheet: View {
         try? repo.addBlock(block)
         try? repo.addSet(WorkoutSet(orderIndex: 0, weightKg: fKg, reps: fR, setType: .normal), to: block)
         try? repo.addSet(WorkoutSet(orderIndex: 1, weightKg: dKg, reps: dR, setType: .drop),   to: block)
+        try? repo.setPreferredUnit(inputUnit, for: block)
         dismiss()
     }
 
@@ -517,6 +519,7 @@ struct AddBlockSheet: View {
         try? repo.addBlock(block)
         try? repo.addSet(WorkoutSet(orderIndex: 0, weightKg: aKg, reps: aR), to: block)
         try? repo.addSet(WorkoutSet(orderIndex: 1, weightKg: bKg, reps: bR), to: block)
+        try? repo.setPreferredUnit(inputUnit, for: block)
         dismiss()
     }
 }

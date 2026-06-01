@@ -180,6 +180,7 @@ struct AddSupersetSetSheet: View {
         let base = block.sets.count
         try? repo.addSet(WorkoutSet(orderIndex: base,     weightKg: aKg, reps: aReps), to: block)
         try? repo.addSet(WorkoutSet(orderIndex: base + 1, weightKg: bKg, reps: bReps), to: block)
+        try? repo.setPreferredUnit(inputUnit, for: block)
         dismiss()
     }
 }

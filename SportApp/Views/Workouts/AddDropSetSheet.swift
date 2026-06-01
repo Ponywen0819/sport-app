@@ -215,6 +215,7 @@ struct AddDropSetSheet: View {
         let base = block.sets.count
         try? repo.addSet(WorkoutSet(orderIndex: base,     weightKg: fKg, reps: fReps, setType: .normal), to: block)
         try? repo.addSet(WorkoutSet(orderIndex: base + 1, weightKg: dKg, reps: dReps, setType: .drop),   to: block)
+        try? repo.setPreferredUnit(inputUnit, for: block)
         dismiss()
     }
 }

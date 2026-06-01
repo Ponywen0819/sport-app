@@ -280,10 +280,11 @@ struct WorkoutDaySection: View {
             case .addBlock:
                 AddBlockSheet(date: date, orderIndex: blocks.count, displayUnit: displayUnit)
             case .addSet(let block):
+                let unit = repo.preferredUnit(for: block) ?? displayUnit
                 switch block.type {
-                case .dropSet:   AddDropSetSheet(block: block, displayUnit: displayUnit)
-                case .superset:  AddSupersetSetSheet(block: block, displayUnit: displayUnit)
-                default:         AddSetSheet(block: block, displayUnit: displayUnit)
+                case .dropSet:   AddDropSetSheet(block: block, displayUnit: unit)
+                case .superset:  AddSupersetSetSheet(block: block, displayUnit: unit)
+                default:         AddSetSheet(block: block, displayUnit: unit)
                 }
             }
         }

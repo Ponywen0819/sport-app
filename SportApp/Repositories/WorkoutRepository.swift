@@ -37,4 +37,24 @@ final class WorkoutRepository {
         }
         try context.save()
     }
+
+    // MARK: - Per-block unit preference
+
+    func preferredUnit(for block: WorkoutBlock) -> WeightUnit? {
+        preferredUnitRecord(for: block)?.preferredUnit
+    }
+
+    func setPreferredUnit(_ unit: WeightUnit, for block: WorkoutBlock) throws {
+        if let existing = preferredUnitRecord(for: block) {
+            existing.unit = unit.rawValue
+        } else {
+            context.insert(BlockUnitPreference(block: block, unit: unit))
+        }
+        try context.save()
+    }
+
+    private func preferredUnitRecord(for block: WorkoutBlock) -> BlockUnitPreference? {
+        let all = (try? context.fetch(FetchDescriptor<BlockUnitPreference>())) ?? []
+        return all.first { $0.block?.persistentModelID == block.persistentModelID }
+    }
 }

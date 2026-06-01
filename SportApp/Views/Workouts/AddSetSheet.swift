@@ -150,6 +150,7 @@ struct AddSetSheet: View {
     private func save() {
         guard let kg = weightKg, let r = reps else { return }
         try? repo.addSet(WorkoutSet(orderIndex: block.sets.count, weightKg: kg, reps: r), to: block)
+        try? repo.setPreferredUnit(inputUnit, for: block)
         dismiss()
     }
 }
