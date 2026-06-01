@@ -30,4 +30,11 @@ final class WorkoutRepository {
         context.delete(set)
         try context.save()
     }
+
+    func reorderBlocks(_ ordered: [WorkoutBlock]) throws {
+        for (idx, block) in ordered.enumerated() {
+            block.orderIndex = idx
+        }
+        try context.save()
+    }
 }

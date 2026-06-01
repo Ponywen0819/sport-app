@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - Weight Unit
 
@@ -191,6 +192,12 @@ struct WorkoutDaySection: View {
     @Query private var blocks: [WorkoutBlock]
     @Environment(WorkoutRepository.self) private var repo
     @State private var activeSheet: DaySectionSheet? = nil
+    @State private var draggedBlock: WorkoutBlock? = nil
+    @State private var previewBlocks: [WorkoutBlock] = []
+
+    private var renderedBlocks: [WorkoutBlock] {
+        (draggedBlock != nil && !previewBlocks.isEmpty) ? previewBlocks : blocks
+    }
 
     init(date: Date, displayUnit: Binding<WeightUnit>) {
         self.date = date
@@ -253,9 +260,9 @@ struct WorkoutDaySection: View {
                     emptyState
                 } else {
                     Divider().background(Color.appBorder.opacity(0.5))
-                    ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
-                        workoutBlockRow(block: block)
-                        if index < blocks.count - 1 {
+                    ForEach(Array(renderedBlocks.enumerated()), id: \.element.id) { index, block in
+                        workoutBlockRow(block: block, index: index)
+                        if index < renderedBlocks.count - 1 {
                             Divider().background(Color.appBorder.opacity(0.5))
                         }
                     }
@@ -263,6 +270,10 @@ struct WorkoutDaySection: View {
             }
             .background(Color.appCard)
             .cornerRadius(16)
+            .onDrop(of: [UTType.text], delegate: ResetReorderDropDelegate(
+                draggedBlock: $draggedBlock,
+                previewBlocks: $previewBlocks
+            ))
         }
         .sheet(item: $activeSheet) { target in
             switch target {
@@ -310,7 +321,33 @@ struct WorkoutDaySection: View {
         .cornerRadius(12)
     }
 
-    private func workoutBlockRow(block: WorkoutBlock) -> some View {
+    private func workoutBlockRow(block: WorkoutBlock, index: Int) -> some View {
+        workoutBlockBody(block: block)
+            .opacity(draggedBlock?.id == block.id ? 0 : 1)
+            .contentShape(Rectangle())
+            .onDrag {
+                NSItemProvider(object: NSString(string: "\(block.persistentModelID.hashValue)"))
+            } preview: {
+                workoutBlockBody(block: block)
+                    .frame(maxWidth: 360)
+                    .background(Color.appCard)
+                    .cornerRadius(12)
+                    .onAppear {
+                        draggedBlock  = block
+                        previewBlocks = blocks
+                    }
+            }
+            .onDrop(of: [UTType.text], delegate: BlockReorderDropDelegate(
+                target: block,
+                draggedBlock: $draggedBlock,
+                previewBlocks: $previewBlocks,
+                onCommit: { ordered in
+                    try? repo.reorderBlocks(ordered)
+                }
+            ))
+    }
+
+    private func workoutBlockBody(block: WorkoutBlock) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -587,6 +624,62 @@ struct WorkoutDaySection: View {
                     .foregroundColor(color)
             }
         }
+    }
+}
+
+// MARK: - Drag-to-reorder Drop Delegates
+
+private struct BlockReorderDropDelegate: DropDelegate {
+    let target: WorkoutBlock
+    @Binding var draggedBlock: WorkoutBlock?
+    @Binding var previewBlocks: [WorkoutBlock]
+    let onCommit: ([WorkoutBlock]) -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let dragged = draggedBlock,
+              dragged.id != target.id,
+              let from = previewBlocks.firstIndex(where: { $0.id == dragged.id }),
+              let to   = previewBlocks.firstIndex(where: { $0.id == target.id }),
+              previewBlocks[to].id != dragged.id
+        else { return }
+
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+            let item = previewBlocks.remove(at: from)
+            previewBlocks.insert(item, at: to)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        onCommit(previewBlocks)
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+            draggedBlock  = nil
+            previewBlocks = []
+        }
+        return true
+    }
+}
+
+// Catch-all on the day-section container. Fires when the user drops on
+// whitespace inside the card (between rows, on the header, etc.) — resets
+// the preview state so the UI snaps back to the on-disk order.
+private struct ResetReorderDropDelegate: DropDelegate {
+    @Binding var draggedBlock: WorkoutBlock?
+    @Binding var previewBlocks: [WorkoutBlock]
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            draggedBlock  = nil
+            previewBlocks = []
+        }
+        return false
     }
 }
 
