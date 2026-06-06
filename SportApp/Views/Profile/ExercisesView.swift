@@ -36,7 +36,9 @@ struct ExercisesView: View {
             .padding(.horizontal, 16)
             .padding(.top, 16)
             .padding(.bottom, 12)
-            searchBar
+            SearchField(placeholder: "搜尋動作...", text: $searchText)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
             equipmentFilter
             exerciseList
         }
@@ -52,23 +54,6 @@ struct ExercisesView: View {
     // MARK: - Header
 
     // MARK: - Search
-
-    private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15))
-                .foregroundColor(.appTextTert)
-            TextField("搜尋動作...", text: $searchText)
-                .font(.system(size: 15))
-                .foregroundColor(.appText)
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 48)
-        .appCard(cornerRadius: 12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder, lineWidth: 1))
-        .padding(.horizontal, 16)
-        .padding(.bottom, 10)
-    }
 
     // MARK: - Equipment Filter
 

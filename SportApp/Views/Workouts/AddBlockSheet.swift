@@ -115,7 +115,7 @@ struct AddBlockSheet: View {
         VStack(spacing: 0) {
             blockTypeSelector
                 .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 10)
-            searchBarView
+            SearchField(placeholder: "搜尋動作...", text: $searchText)
                 .padding(.horizontal, 16).padding(.bottom, 8)
             chipRow(items: equipment, selected: $selectedEquipment, color: .appBlue).padding(.bottom, 6)
             chipRow(items: muscles,   selected: $selectedMuscle,    color: .appEmerald).padding(.bottom, 8)
@@ -334,14 +334,6 @@ struct AddBlockSheet: View {
                 }
             }
         }
-    }
-
-    private var searchBarView: some View {
-        HStack {
-            Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundColor(.appTextTert)
-            TextField("搜尋動作...", text: $searchText).font(.system(size: 15)).foregroundColor(.appText)
-        }
-        .padding(.horizontal, 16).frame(height: 44).appCard(cornerRadius: 12)
     }
 
     private func chipRow(items: [String], selected: Binding<String?>, color: Color) -> some View {

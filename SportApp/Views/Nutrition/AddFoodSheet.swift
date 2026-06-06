@@ -82,7 +82,7 @@ private struct SearchView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                searchBar
+                SearchField(placeholder: "搜尋食物名稱…", text: $query)
                     .padding(16)
 
                 if query.isEmpty {
@@ -107,20 +107,6 @@ private struct SearchView: View {
         .navigationTitle("新增食物")
         .onAppear { loadRecent() }
         .onChange(of: query) { _, q in performSearch(q) }
-    }
-
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.appTextMuted)
-            TextField("搜尋食物名稱…", text: $query)
-                .foregroundColor(.appText)
-                .autocorrectionDisabled()
-        }
-        .padding(.horizontal, 14)
-        .frame(height: 44)
-        .appCard(cornerRadius: 12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder, lineWidth: 1))
     }
 
     private func sectionHeader(_ title: String) -> some View {
