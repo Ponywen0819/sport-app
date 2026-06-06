@@ -10,7 +10,7 @@ struct HomeView: View {
     @AppStorage("nutritionGoalCarbs")    private var goalCarbs:    Int = 0
     @AppStorage("nutritionGoalFat")      private var goalFat:      Int = 0
 
-    private let weekDayLabels = ["一", "二", "三", "四", "五", "六", "日"]
+    private let weekDayLabels = DateFormat.weekdayInitialsMondayFirst
     private let calendar = Calendar.current
 
     // MARK: Computed

@@ -7,7 +7,7 @@ struct WeeklyWorkoutSummaryCard: View {
     let setsByDay: [Int?]
     let todayIndex: Int
 
-    private let dayLabels = ["一", "二", "三", "四", "五", "六", "日"]
+    private let dayLabels = DateFormat.weekdayInitialsMondayFirst
 
     private var totalDays: Int { setsByDay.compactMap { $0 }.count }
     private var totalSets: Int { setsByDay.compactMap { $0 }.reduce(0, +) }

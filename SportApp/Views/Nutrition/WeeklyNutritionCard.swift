@@ -12,7 +12,7 @@ struct WeeklyNutritionCard: View {
     @State private var expanded = true
 
     private let calendar = Calendar.current
-    private let dayLabels = ["一", "二", "三", "四", "五", "六", "日"]
+    private let dayLabels = DateFormat.weekdayInitialsMondayFirst
 
     init(weekDates: [Date], goalCalories: Int) {
         self.weekDates    = weekDates

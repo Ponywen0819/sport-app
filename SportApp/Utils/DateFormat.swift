@@ -8,6 +8,12 @@ import Foundation
 // Fixed numeric formats use en_US_POSIX so output is stable and locale-/
 // calendar-independent — the right choice for keys and short labels.
 enum DateFormat {
+    // Traditional-Chinese weekday initials. Monday-first matches the weekly
+    // summary cards (which index the week from Monday); Sunday-first matches the
+    // calendar grid (which starts each row on Sunday).
+    static let weekdayInitialsMondayFirst = ["一", "二", "三", "四", "五", "六", "日"]
+    static let weekdayInitialsSundayFirst = ["日", "一", "二", "三", "四", "五", "六"]
+
     // Calendar-day key for grouping / matching records by day, e.g. "2025-05-31".
     static func dayKey(_ date: Date) -> String { dayKeyFormatter.string(from: date) }
 

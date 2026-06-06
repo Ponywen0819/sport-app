@@ -7,7 +7,7 @@ struct DateSelectorView: View {
     @State private var displayMonth: Date = Date()
 
     private let calendar = Calendar.current
-    private let dayLabels = ["日", "一", "二", "三", "四", "五", "六"]
+    private let dayLabels = DateFormat.weekdayInitialsSundayFirst
 
     private var displayTitle: String {
         let formatter = DateFormatter()
