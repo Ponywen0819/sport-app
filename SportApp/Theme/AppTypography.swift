@@ -8,10 +8,14 @@ import SwiftUI
 // `.font(.system(size:))`, and component-internal fonts (AppPillBadge,
 // AppUnitToggle, AppNumberField) keep their own values.
 extension Font {
+    // Primary screen title (home hero), doc 主標題.
+    static let appTitle        = Font.system(size: 24, weight: .bold)
     // Large numeric value in a text field, e.g. the weight / reps inputs.
     static let appInputValue   = Font.system(size: 24, weight: .semibold)
-    // Page header, e.g. "運動紀錄".
+    // Page header, e.g. "運動紀錄", doc 副標題.
     static let appPageTitle    = Font.system(size: 20, weight: .bold)
+    // Prominent numeric metric value, e.g. body-index figures (doc 18pt bold).
+    static let appStatValue    = Font.system(size: 18, weight: .bold)
     // Sheet header, e.g. an exercise name or "超級組".
     static let appHeading      = Font.system(size: 18, weight: .semibold)
     // In-card section title, e.g. "今日訓練".

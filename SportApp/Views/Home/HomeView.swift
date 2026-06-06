@@ -74,7 +74,7 @@ struct HomeView: View {
     private var titleSection: some View {
         HStack {
             Text("運動紀錄")
-                .font(.system(size: 24, weight: .bold))
+                .font(.appTitle)
                 .foregroundColor(.appText)
             Spacer()
         }
@@ -86,15 +86,15 @@ struct HomeView: View {
         VStack(spacing: 12) {
             HStack {
                 Text("本週訓練")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appTextSub)
                 Spacer()
                 HStack(spacing: 2) {
                     Text("\(trainedDaysCount)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appControlLabel)
                         .foregroundColor(.appEmerald)
                     Text("/ 7 天")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                 }
             }
@@ -114,7 +114,7 @@ struct HomeView: View {
         let isToday = index == todayIndex
         return VStack(spacing: 6) {
             Text(weekDayLabels[index])
-                .font(.system(size: 12, weight: .medium))
+                .font(.appLabel)
                 .foregroundColor(isToday ? .appTextSub : .appTextTert)
 
             ZStack {
@@ -162,11 +162,11 @@ struct HomeView: View {
             VStack(spacing: 12) {
                 HStack {
                     Text("身體指標")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.appCardLabel)
                         .foregroundColor(.appTextSub)
                     Spacer()
                     Text(DateFormat.dayKey(record.date))
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextMuted)
                 }
                 HStack {
@@ -198,7 +198,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 3) {
                 Text(label)
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
                 if filled {
                     Image(systemName: "clock.arrow.circlepath")
@@ -208,11 +208,11 @@ struct HomeView: View {
             }
             HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.appStatValue)
                     .foregroundColor(value == "—" ? .appTextTert : (filled ? color.opacity(0.6) : color))
                 if !unit.isEmpty && value != "—" {
                     Text(unit)
-                        .font(.system(size: 11))
+                        .font(.appMicro)
                         .foregroundColor(.appTextTert)
                 }
             }
@@ -263,10 +263,10 @@ struct HomeView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appText)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
             }
         }
@@ -318,11 +318,11 @@ private struct HomeDayNutritionCard: View {
             VStack(spacing: 12) {
                 HStack {
                     Text("今日營養")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.appCardLabel)
                         .foregroundColor(.appTextSub)
                     Spacer()
                     Text("\(Int(totalCalories)) / \(goalCalories) kcal")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextMuted)
                 }
 
@@ -343,7 +343,7 @@ private struct HomeDayNutritionCard: View {
         return VStack(spacing: 4) {
             HStack {
                 Text(label)
-                    .font(.system(size: 11))
+                    .font(.appMicro)
                     .foregroundColor(.appTextTert)
                 Spacer()
             }

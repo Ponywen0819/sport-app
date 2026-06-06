@@ -47,7 +47,7 @@ struct NutritionView: View {
     private var titleSection: some View {
         HStack {
             Text("今日飲食")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
             Spacer()
         }
@@ -165,15 +165,15 @@ private struct NutritionOverviewCard: View {
         return VStack(spacing: 4) {
             HStack {
                 Text(label)
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
                 Spacer()
                 HStack(alignment: .lastTextBaseline, spacing: 2) {
                     Text(fmt(value))
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appCardLabel)
                         .foregroundColor(textColor)
                     Text("/ \(Int(goal)) \(unit)")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextMuted)
                 }
             }
@@ -190,7 +190,7 @@ private struct NutritionOverviewCard: View {
                 Text(isOver
                      ? "超出 \(abs(remaining)) \(unit)"
                      : "還差 \(remaining) \(unit)")
-                    .font(.system(size: 11))
+                    .font(.appMicro)
                     .foregroundColor(isOver ? .appRed : .appTextTert)
                 Spacer()
             }
@@ -224,9 +224,9 @@ private struct NutritionSummaryTiles: View {
 
     private func tile(label: String, value: Double, unit: String, color: Color) -> some View {
         VStack(spacing: 2) {
-            Text(label).font(.system(size: 11)).foregroundColor(.appTextTert)
-            Text(fmt(value)).font(.system(size: 18, weight: .bold)).foregroundColor(color)
-            Text(unit).font(.system(size: 10)).foregroundColor(.appTextMuted)
+            Text(label).font(.appMicro).foregroundColor(.appTextTert)
+            Text(fmt(value)).font(.appStatValue).foregroundColor(color)
+            Text(unit).font(.appMicro).foregroundColor(.appTextMuted)
         }
         .frame(maxWidth: .infinity)
     }
@@ -252,11 +252,11 @@ private struct MealTrackerCard: View {
             HStack {
                 HStack(spacing: 8) {
                     Text(mealType.rawValue)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.appCardLabel)
                         .foregroundColor(.appText)
                     if totalCalories > 0 {
                         Text("\(Int(totalCalories)) kcal")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                     }
                 }
@@ -276,7 +276,7 @@ private struct MealTrackerCard: View {
             if items.isEmpty {
                 HStack {
                     Text("尚無紀錄，點擊 + 新增")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextMuted)
                     Spacer()
                 }
@@ -288,10 +288,10 @@ private struct MealTrackerCard: View {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.foodName)
-                                .font(.system(size: 14))
+                                .font(.appBody)
                                 .foregroundColor(.appTextSub)
                             Text("\(fmt(item.intake))g · \(fmt(item.calories)) kcal · P \(fmt(item.protein))g · F \(fmt(item.fat))g · C \(fmt(item.carbs))g")
-                                .font(.system(size: 11))
+                                .font(.appMicro)
                                 .foregroundColor(.appTextTert)
                         }
                         Spacer()
@@ -391,19 +391,19 @@ private struct WeeklyNutritionCard: View {
                 HStack {
                     HStack(spacing: 8) {
                         Text("本週摘要")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.appCardLabel)
                             .foregroundColor(.appTextSub)
                         Text(weekRange)
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                     }
                     Spacer()
                     HStack(spacing: 6) {
                         Text("\(recordedDays)/7 天")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                         Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                     }
                 }
@@ -433,7 +433,7 @@ private struct WeeklyNutritionCard: View {
                                     }
                                 }
                                 Text(dayLabels[i])
-                                    .font(.system(size: 10))
+                                    .font(.appMicro)
                                     .foregroundColor(.appTextMuted)
                             }
                             .frame(maxWidth: .infinity)
@@ -467,9 +467,9 @@ private struct WeeklyNutritionCard: View {
 
     private func statBox(label: String, value: String, subLabel: String, valueColor: Color = .appText) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.system(size: 10)).foregroundColor(.appTextTert)
-            Text(value).font(.system(size: 14, weight: .semibold)).foregroundColor(valueColor)
-            Text(subLabel).font(.system(size: 10)).foregroundColor(.appTextMuted)
+            Text(label).font(.appMicro).foregroundColor(.appTextTert)
+            Text(value).font(.appCardLabel).foregroundColor(valueColor)
+            Text(subLabel).font(.appMicro).foregroundColor(.appTextMuted)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

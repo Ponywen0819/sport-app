@@ -54,7 +54,7 @@ struct AddFoodSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.appBody)
                             .foregroundColor(.appTextSub)
                             .frame(width: 28, height: 28)
                             .background(Color.appBorder)
@@ -126,7 +126,7 @@ private struct SearchView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.appControlLabel)
             .foregroundColor(.appTextTert)
             .padding(.horizontal, 16)
             .padding(.bottom, 6)
@@ -139,15 +139,15 @@ private struct SearchView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(food.name)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.appBody)
                                 .foregroundColor(.appText)
                             Text("\(fmt(food.calories)) kcal · P \(fmt(food.protein))g · F \(fmt(food.fat))g · C \(fmt(food.carbs))g  / \(fmt(food.weightBasis))g")
-                                .font(.system(size: 11))
+                                .font(.appMicro)
                                 .foregroundColor(.appTextTert)
                         }
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextMuted)
                     }
                     .padding(.horizontal, 16)
@@ -169,7 +169,7 @@ private struct SearchView: View {
 
     private var emptyResult: some View {
         Text("找不到「\(query)」，試試建立新食物")
-            .font(.system(size: 13))
+            .font(.appCaption)
             .foregroundColor(.appTextMuted)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
@@ -181,7 +181,7 @@ private struct SearchView: View {
                 Image(systemName: "plus.circle.fill")
                 Text("建立新食物")
             }
-            .font(.system(size: 14, weight: .medium))
+            .font(.appBody)
             .foregroundColor(.appEmerald)
             .frame(maxWidth: .infinity)
             .frame(height: 48)
@@ -230,7 +230,7 @@ private struct IntakeView: View {
                 // Macros reference card
                 VStack(alignment: .leading, spacing: 10) {
                     Text("每 \(fmt(food.weightBasis))g 營養素")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                     HStack(spacing: 0) {
                         macroCell(label: "熱量", value: fmt(food.calories), unit: "kcal", color: .appRed)
@@ -246,7 +246,7 @@ private struct IntakeView: View {
                 // Intake input
                 VStack(alignment: .leading, spacing: 8) {
                     Text("攝取量 (g)")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                     TextField("0", text: $intakeStr)
                         .keyboardType(.decimalPad)
@@ -263,7 +263,7 @@ private struct IntakeView: View {
                 if let i = intake {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("攝取 \(fmt(i))g 的營養素")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                         HStack(spacing: 0) {
                             macroCell(label: "熱量", value: fmt(food.calories * i / food.weightBasis), unit: "kcal", color: .appRed)
@@ -314,13 +314,13 @@ private struct IntakeView: View {
     private func macroCell(label: String, value: String, unit: String, color: Color) -> some View {
         VStack(spacing: 2) {
             Text(label)
-                .font(.system(size: 10))
+                .font(.appMicro)
                 .foregroundColor(.appTextMuted)
             Text(value)
-                .font(.system(size: 15, weight: .bold))
+                .font(.appItemTitle)
                 .foregroundColor(color)
             Text(unit)
-                .font(.system(size: 9))
+                .font(.appMicro)
                 .foregroundColor(.appTextTert)
         }
         .frame(maxWidth: .infinity)
@@ -381,7 +381,7 @@ private struct CreateFoodView: View {
 
                 let basis = Double(basisStr) ?? 100
                 Text("以下為每 \(fmt(basis))g 的營養素")
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -431,10 +431,10 @@ private struct CreateFoodView: View {
     private func label(_ text: String, required: Bool = false) -> some View {
         HStack(spacing: 3) {
             Text(text)
-                .font(.system(size: 12))
+                .font(.appCaption)
                 .foregroundColor(.appTextTert)
             if required {
-                Text("*").font(.system(size: 11)).foregroundColor(.appRed)
+                Text("*").font(.appMicro).foregroundColor(.appRed)
             }
         }
     }
@@ -443,12 +443,12 @@ private struct CreateFoodView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 3) {
                 Text(label)
-                    .font(.system(size: 11))
+                    .font(.appMicro)
                     .foregroundColor(.appTextTert)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 if required {
-                    Text("*").font(.system(size: 10)).foregroundColor(.appRed)
+                    Text("*").font(.appMicro).foregroundColor(.appRed)
                 }
             }
             TextField("0", text: text)
@@ -498,13 +498,13 @@ struct EditIntakeSheet: View {
         NavigationStack {
             VStack(spacing: 20) {
                 Text(record.foodName)
-                    .font(.system(size: 14))
+                    .font(.appBody)
                     .foregroundColor(.appTextSub)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("攝取量 (g)")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                     TextField("0", text: $intakeStr)
                         .keyboardType(.decimalPad)
@@ -564,9 +564,9 @@ struct EditIntakeSheet: View {
 
     private func previewCell(label: String, value: Double, unit: String, color: Color) -> some View {
         VStack(spacing: 2) {
-            Text(label).font(.system(size: 10)).foregroundColor(.appTextMuted)
-            Text(fmt(value)).font(.system(size: 14, weight: .bold)).foregroundColor(color)
-            Text(unit).font(.system(size: 9)).foregroundColor(.appTextTert)
+            Text(label).font(.appMicro).foregroundColor(.appTextMuted)
+            Text(fmt(value)).font(.appCardLabel).foregroundColor(color)
+            Text(unit).font(.appMicro).foregroundColor(.appTextTert)
         }
         .frame(maxWidth: .infinity)
     }
