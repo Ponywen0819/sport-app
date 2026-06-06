@@ -12,7 +12,6 @@ struct WeeklyNutritionCard: View {
     @State private var expanded = true
 
     private let calendar = Calendar.current
-    private let dayLabels = DateFormat.weekdayInitialsMondayFirst
 
     init(weekDates: [Date], goalCalories: Int) {
         self.weekDates    = weekDates
@@ -91,55 +90,82 @@ struct WeeklyNutritionCard: View {
             .buttonStyle(.plain)
 
             if expanded {
-                VStack(spacing: 12) {
-                    // Bar chart
-                    HStack(alignment: .bottom, spacing: 4) {
-                        ForEach(0..<7, id: \.self) { i in
-                            let cal = dayCalories[i]
-                            let ratio: Double? = cal > 0
-                                ? (goalCalories > 0 ? min(cal / Double(goalCalories), 1.0) : 0.5)
-                                : nil
-                            VStack(spacing: 4) {
-                                ZStack(alignment: .bottom) {
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.appBorder)
-                                        .frame(height: 32)
-                                    if let r = ratio {
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .fill(r >= 0.9 ? Color.appEmeraldCTA : Color.appBlueCTA)
-                                            .frame(height: max(CGFloat(r) * 32, 6))
-                                    }
-                                }
-                                Text(dayLabels[i])
-                                    .font(.appMicro)
-                                    .foregroundColor(.appTextMuted)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .frame(height: 48)
-
-                    HStack(spacing: 8) {
-                        statBox(label: "均卡路里",
-                                value: avgCalories > 0 ? "\(Int(avgCalories))" : "—",
-                                subLabel: goalCalories > 0 ? "目標 \(goalCalories)" : "未設定目標")
-                        statBox(label: "均蛋白質",
-                                value: avgProtein > 0 ? "\(Int(avgProtein))g" : "—",
-                                subLabel: "過去 \(recordedDays) 天平均",
-                                valueColor: .appEmerald)
-                        if goalCalories > 0 {
-                            statBox(label: "達標天數",
-                                    value: "\(goalDays)/7",
-                                    subLabel: "≥90% 目標",
-                                    valueColor: .appBlue)
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                WeeklyNutritionDetail(
+                    dayCalories: dayCalories,
+                    goalCalories: goalCalories,
+                    avgCalories: avgCalories,
+                    avgProtein: avgProtein,
+                    recordedDays: recordedDays,
+                    goalDays: goalDays
+                )
             }
         }
         .appCard()
+    }
+}
+
+// MARK: - Expanded Detail
+
+// The expanded body of the weekly nutrition card: a seven-day calorie bar chart
+// plus average / goal-day stat boxes. Split out so the card itself stays a thin
+// header + toggle.
+private struct WeeklyNutritionDetail: View {
+    let dayCalories: [Double]
+    let goalCalories: Int
+    let avgCalories: Double
+    let avgProtein: Double
+    let recordedDays: Int
+    let goalDays: Int
+
+    private let dayLabels = DateFormat.weekdayInitialsMondayFirst
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // Bar chart
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach(0..<7, id: \.self) { i in
+                    let cal = dayCalories[i]
+                    let ratio: Double? = cal > 0
+                        ? (goalCalories > 0 ? min(cal / Double(goalCalories), 1.0) : 0.5)
+                        : nil
+                    VStack(spacing: 4) {
+                        ZStack(alignment: .bottom) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.appBorder)
+                                .frame(height: 32)
+                            if let r = ratio {
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(r >= 0.9 ? Color.appEmeraldCTA : Color.appBlueCTA)
+                                    .frame(height: max(CGFloat(r) * 32, 6))
+                            }
+                        }
+                        Text(dayLabels[i])
+                            .font(.appMicro)
+                            .foregroundColor(.appTextMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 48)
+
+            HStack(spacing: 8) {
+                statBox(label: "均卡路里",
+                        value: avgCalories > 0 ? "\(Int(avgCalories))" : "—",
+                        subLabel: goalCalories > 0 ? "目標 \(goalCalories)" : "未設定目標")
+                statBox(label: "均蛋白質",
+                        value: avgProtein > 0 ? "\(Int(avgProtein))g" : "—",
+                        subLabel: "過去 \(recordedDays) 天平均",
+                        valueColor: .appEmerald)
+                if goalCalories > 0 {
+                    statBox(label: "達標天數",
+                            value: "\(goalDays)/7",
+                            subLabel: "≥90% 目標",
+                            valueColor: .appBlue)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
     }
 
     private func statBox(label: String, value: String, subLabel: String, valueColor: Color = .appText) -> some View {
