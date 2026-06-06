@@ -45,7 +45,7 @@ struct AddSupersetSetSheet: View {
                     // Round label
                     VStack(alignment: .leading, spacing: 4) {
                         Text("超級組")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.appHeading)
                             .foregroundColor(.appText)
                         Text("第 \(roundNumber) 回合")
                             .font(.system(size: 13))
@@ -114,7 +114,7 @@ struct AddSupersetSetSheet: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(name)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appControlLabel)
                 .foregroundColor(color)
             HStack(spacing: 12) {
                 AppNumberField(label: "重量", text: weightInput, isDecimal: true)

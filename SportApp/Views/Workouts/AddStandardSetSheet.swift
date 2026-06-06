@@ -149,7 +149,7 @@ struct AddStandardSetSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(block.exerciseName)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.appHeading)
                 .foregroundColor(.appText)
             Text("第 \(roundNumber) 回合")
                 .font(.system(size: 13))
@@ -163,7 +163,7 @@ struct AddStandardSetSheet: View {
             ForEach(Mode.allCases) { m in
                 Button { mode = m } label: {
                     Text(m.rawValue)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appControlLabel)
                         .foregroundColor(mode == m ? .appText : .appTextTert)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -225,7 +225,7 @@ struct AddStandardSetSheet: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appControlLabel)
                 .foregroundColor(color)
             content()
         }

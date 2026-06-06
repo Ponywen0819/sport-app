@@ -16,24 +16,24 @@ struct WeeklyWorkoutSummaryCard: View {
         VStack(spacing: 12) {
             HStack {
                 Text("本週訓練")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appTextSub)
                 Spacer()
                 HStack(spacing: 12) {
                     HStack(spacing: 4) {
                         Text("\(totalDays)")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.appControlLabel)
                             .foregroundColor(.appEmerald)
                         Text("天")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                     }
                     HStack(spacing: 4) {
                         Text("\(totalSets)")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.appControlLabel)
                             .foregroundColor(.appBlue)
                         Text("組")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                     }
                 }
@@ -43,7 +43,7 @@ struct WeeklyWorkoutSummaryCard: View {
                 ForEach(0..<7, id: \.self) { index in
                     VStack(spacing: 4) {
                         Text(dayLabels[index])
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.appMicro)
                             .foregroundColor(index == todayIndex ? .appTextSub : .appTextTert)
 
                         ZStack {

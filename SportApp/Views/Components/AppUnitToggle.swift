@@ -12,7 +12,7 @@ struct AppUnitToggle: View {
             ForEach(WeightUnit.allCases, id: \.self) { unit in
                 Button { onSelect(unit) } label: {
                     Text(unit.rawValue)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appControlLabel)
                         .foregroundColor(selected == unit ? .appText : .appTextTert)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)

@@ -324,7 +324,7 @@ struct AddBlockSheet: View {
             ForEach(BlockType.allCases, id: \.self) { type in
                 Button { blockType = type } label: {
                     Text(type.label)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appControlLabel)
                         .foregroundColor(blockType == type ? type.badgeColor : .appTextTert)
                         .frame(maxWidth: .infinity).padding(.vertical, 10)
                         .background(blockType == type ? type.badgeColor.opacity(0.15) : Color.appCard)
@@ -383,7 +383,7 @@ struct AddBlockSheet: View {
     @ViewBuilder
     private func segmentCard(title: String, color: Color, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.system(size: 13, weight: .semibold)).foregroundColor(color)
+            Text(title).font(.appControlLabel).foregroundColor(color)
             content()
         }
         .padding(14).background(Color.appCard).cornerRadius(14)

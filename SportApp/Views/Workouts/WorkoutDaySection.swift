@@ -57,7 +57,7 @@ struct WorkoutDaySection: View {
             if !blocks.isEmpty {
                 HStack {
                     Text("共 \(blocks.count) 個動作 · \(totalSets) 組")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.appBody)
                         .foregroundColor(.appTextSub)
                     Spacer()
                     AppUnitToggle(selected: displayUnit) { displayUnit = $0 }
@@ -71,7 +71,7 @@ struct WorkoutDaySection: View {
             VStack(spacing: 0) {
                 HStack {
                     Text(sectionTitle)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.appSectionTitle)
                         .foregroundColor(.appText)
                     Spacer()
                     AppIconButton(

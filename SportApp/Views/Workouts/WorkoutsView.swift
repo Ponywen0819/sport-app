@@ -63,7 +63,7 @@ struct WorkoutsView: View {
     private var titleSection: some View {
         HStack {
             Text("運動紀錄")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
             Spacer()
         }

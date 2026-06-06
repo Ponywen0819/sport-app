@@ -25,7 +25,7 @@ struct WorkoutBlockRow: View {
                         }
                     }
                     Text("\(roundCountText) 回合")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                 }
 
@@ -62,7 +62,7 @@ struct WorkoutBlockRow: View {
             }
         } else {
             Text(block.exerciseName)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.appItemTitle)
                 .foregroundColor(.appText)
         }
     }

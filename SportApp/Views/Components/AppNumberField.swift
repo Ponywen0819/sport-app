@@ -11,11 +11,11 @@ struct AppNumberField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.appLabel)
                 .foregroundColor(.appTextTert)
             TextField("0", text: $text)
                 .keyboardType(isDecimal ? .decimalPad : .numberPad)
-                .font(.system(size: 24, weight: .semibold))
+                .font(.appInputValue)
                 .foregroundColor(.appText)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)

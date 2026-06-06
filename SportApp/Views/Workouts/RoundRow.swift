@@ -64,7 +64,7 @@ private struct SingleSetRow: View {
         HStack {
             HStack(spacing: 6) {
                 Text("第 \(number) 組")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appLabel)
                     .foregroundColor(.appTextTert)
                 RoundCountBadge(count: count)
                 if let exName = exerciseLabel {
@@ -75,7 +75,7 @@ private struct SingleSetRow: View {
             }
             Spacer()
             Text("\(displayUnit.format(set.weightKg)) · \(set.reps) 下")
-                .font(.system(size: 14, weight: .medium))
+                .font(.appBody)
                 .foregroundColor(.appTextSub)
         }
         .roundRowBackground()
@@ -95,20 +95,20 @@ private struct DropSetRoundRow: View {
         HStack {
             HStack(spacing: 6) {
                 Text("第 \(number) 回合")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appLabel)
                     .foregroundColor(.appTextTert)
                 RoundCountBadge(count: count)
             }
             Spacer()
             HStack(spacing: 6) {
                 Text("\(displayUnit.format(normal.weightKg)) \(normal.reps)下")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appBody)
                     .foregroundColor(.appTextSub)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.appOrange)
                 Text("\(displayUnit.format(drop.weightKg)) \(drop.reps)下")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appBody)
                     .foregroundColor(.appOrange)
             }
         }
@@ -130,7 +130,7 @@ private struct SupersetRoundRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Text("第 \(number) 回合")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appLabel)
                     .foregroundColor(.appTextTert)
                 RoundCountBadge(count: count)
             }
@@ -140,7 +140,7 @@ private struct SupersetRoundRow: View {
                     .foregroundColor(.appEmerald)
                 Spacer()
                 Text("\(displayUnit.format(setA.weightKg)) · \(setA.reps) 下")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appBody)
                     .foregroundColor(.appTextSub)
             }
             HStack {
@@ -149,7 +149,7 @@ private struct SupersetRoundRow: View {
                     .foregroundColor(.appBlue)
                 Spacer()
                 Text("\(displayUnit.format(setB.weightKg)) · \(setB.reps) 下")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appBody)
                     .foregroundColor(.appTextSub)
             }
         }
