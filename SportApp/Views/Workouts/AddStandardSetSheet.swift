@@ -178,27 +178,15 @@ struct AddStandardSetSheet: View {
     private var unitToggleRow: some View {
         HStack {
             Spacer()
-            HStack(spacing: 0) {
-                ForEach(WeightUnit.allCases, id: \.self) { unit in
-                    Button { switchUnit(to: unit) } label: {
-                        Text(unit.rawValue)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(inputUnit == unit ? .appText : .appTextTert)
-                            .padding(.horizontal, 20).padding(.vertical, 8)
-                            .background(inputUnit == unit ? Color.appBorder : Color.clear)
-                    }
-                }
-            }
-            .background(Color.appBorder.opacity(0.6))
-            .cornerRadius(10)
+            AppUnitToggle(selected: inputUnit) { switchUnit(to: $0) }
         }
     }
 
     private var singleInputs: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                numberInput(placeholder: "重量", text: $singleWeightInput, isDecimal: true)
-                numberInput(placeholder: "次數", text: $singleRepsInput,   isDecimal: false)
+                AppNumberField(label: "重量", text: $singleWeightInput, isDecimal: true)
+                AppNumberField(label: "次數", text: $singleRepsInput)
             }
         }
         .padding(14)
@@ -210,8 +198,8 @@ struct AddStandardSetSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             segmentCard(title: "第一段", color: .appTextSub) {
                 HStack(spacing: 12) {
-                    numberInput(placeholder: "重量", text: $firstWeightInput, isDecimal: true)
-                    numberInput(placeholder: "次數", text: $firstRepsInput,   isDecimal: false)
+                    AppNumberField(label: "重量", text: $firstWeightInput, isDecimal: true)
+                    AppNumberField(label: "次數", text: $firstRepsInput)
                 }
             }
             HStack {
@@ -223,8 +211,8 @@ struct AddStandardSetSheet: View {
             }
             segmentCard(title: "降重", color: .appOrange) {
                 HStack(spacing: 12) {
-                    numberInput(placeholder: "重量", text: $dropWeightInput, isDecimal: true)
-                    numberInput(placeholder: "次數", text: $dropRepsInput,   isDecimal: false)
+                    AppNumberField(label: "重量", text: $dropWeightInput, isDecimal: true)
+                    AppNumberField(label: "次數", text: $dropRepsInput)
                 }
             }
         }
@@ -244,23 +232,6 @@ struct AddStandardSetSheet: View {
         .padding(14)
         .background(Color.appCard)
         .cornerRadius(14)
-    }
-
-    private func numberInput(placeholder: String, text: Binding<String>, isDecimal: Bool) -> some View {
-        VStack(spacing: 4) {
-            Text(placeholder)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.appTextTert)
-            TextField("0", text: text)
-                .keyboardType(isDecimal ? .decimalPad : .numberPad)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(.appText)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(Color.appBackground)
-                .cornerRadius(10)
-        }
     }
 
     private var previewLabel: some View {

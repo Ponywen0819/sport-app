@@ -173,10 +173,14 @@ struct AddBlockSheet: View {
                     }
                 }
             } else {
-                Text(ex.equipment)
-                    .font(.system(size: 11, weight: .semibold)).foregroundColor(.appTextTert)
-                    .padding(.horizontal, 10).padding(.vertical, 4)
-                    .background(Color.appBorder.opacity(0.5)).cornerRadius(100)
+                AppPillBadge(
+                    text: ex.equipment,
+                    color: .appTextTert,
+                    fontWeight: .semibold,
+                    horizontalPadding: 10,
+                    verticalPadding: 4,
+                    background: Color.appBorder.opacity(0.5)
+                )
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
@@ -241,11 +245,14 @@ struct AddBlockSheet: View {
             blockTypeSelector
             Divider().background(Color.appBorder)
             unitToggleRow
-            weightField(label: "重量", text: $weightInput)
-            HStack(spacing: 12) {
-                numField(label: "次數", text: $repsInput)
-                numField(label: "組數（選填）", text: $setsInput)
+            VStack(spacing: 12) {
+                AppNumberField(label: "重量", text: $weightInput, isDecimal: true)
+                HStack(spacing: 12) {
+                    AppNumberField(label: "次數", text: $repsInput)
+                    AppNumberField(label: "組數（選填）", text: $setsInput)
+                }
             }
+            .padding(14).background(Color.appCard).cornerRadius(14)
             previewText(singlePreview)
             addButton(enabled: singleOK) { saveSingle(exerciseA) }
         }
@@ -258,8 +265,8 @@ struct AddBlockSheet: View {
             unitToggleRow
             segmentCard(title: "第一段", color: .appTextSub) {
                 HStack(spacing: 12) {
-                    weightField(label: "重量", text: $firstWeightInput)
-                    numField(label: "次數", text: $firstRepsInput)
+                    AppNumberField(label: "重量", text: $firstWeightInput, isDecimal: true)
+                    AppNumberField(label: "次數", text: $firstRepsInput)
                 }
             }
             HStack {
@@ -270,8 +277,8 @@ struct AddBlockSheet: View {
             }
             segmentCard(title: "降重", color: .appOrange) {
                 HStack(spacing: 12) {
-                    weightField(label: "重量", text: $dropWeightInput)
-                    numField(label: "次數", text: $dropRepsInput)
+                    AppNumberField(label: "重量", text: $dropWeightInput, isDecimal: true)
+                    AppNumberField(label: "次數", text: $dropRepsInput)
                 }
             }
             previewText(dropPreview)
@@ -296,14 +303,14 @@ struct AddBlockSheet: View {
 
             segmentCard(title: exA.name, color: .appEmerald) {
                 HStack(spacing: 12) {
-                    weightField(label: "重量", text: $weightAInput)
-                    numField(label: "次數", text: $repsAInput)
+                    AppNumberField(label: "重量", text: $weightAInput, isDecimal: true)
+                    AppNumberField(label: "次數", text: $repsAInput)
                 }
             }
             segmentCard(title: exB.name, color: .appBlue) {
                 HStack(spacing: 12) {
-                    weightField(label: "重量", text: $weightBInput)
-                    numField(label: "次數", text: $repsBInput)
+                    AppNumberField(label: "重量", text: $weightBInput, isDecimal: true)
+                    AppNumberField(label: "次數", text: $repsBInput)
                 }
             }
             addButton(enabled: superOK) { saveSuperset(exA: exA, exB: exB) }
@@ -356,53 +363,20 @@ struct AddBlockSheet: View {
     }
 
     private func exerciseChip(_ name: String, color: Color) -> some View {
-        Text(name)
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(color)
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(color.opacity(0.15))
-            .cornerRadius(100)
+        AppPillBadge(
+            text: name,
+            color: color,
+            fontSize: 12,
+            fontWeight: .semibold,
+            horizontalPadding: 12,
+            verticalPadding: 6
+        )
     }
 
     private var unitToggleRow: some View {
         HStack {
             Spacer()
-            HStack(spacing: 0) {
-                ForEach(WeightUnit.allCases, id: \.self) { unit in
-                    Button { switchUnit(to: unit) } label: {
-                        Text(unit.rawValue)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(inputUnit == unit ? .appText : .appTextTert)
-                            .padding(.horizontal, 20).padding(.vertical, 8)
-                            .background(inputUnit == unit ? Color.appBorder : Color.clear)
-                    }
-                }
-            }
-            .background(Color.appBorder.opacity(0.6)).cornerRadius(10)
-        }
-    }
-
-    private func weightField(label: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label).font(.system(size: 12, weight: .medium)).foregroundColor(.appTextTert)
-            TextField("0", text: text)
-                .keyboardType(.decimalPad)
-                .font(.system(size: 26, weight: .semibold)).foregroundColor(.appText)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity).frame(height: 56)
-                .background(Color.appCard).cornerRadius(12)
-        }
-    }
-
-    private func numField(label: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label).font(.system(size: 12, weight: .medium)).foregroundColor(.appTextTert)
-            TextField("0", text: text)
-                .keyboardType(.numberPad)
-                .font(.system(size: 26, weight: .semibold)).foregroundColor(.appText)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity).frame(height: 56)
-                .background(Color.appCard).cornerRadius(12)
+            AppUnitToggle(selected: inputUnit) { switchUnit(to: $0) }
         }
     }
 

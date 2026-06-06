@@ -60,7 +60,7 @@ struct WorkoutDaySection: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.appTextSub)
                     Spacer()
-                    unitToggle
+                    AppUnitToggle(selected: displayUnit) { displayUnit = $0 }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -74,14 +74,13 @@ struct WorkoutDaySection: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.appText)
                     Spacer()
-                    Button { activeSheet = .addBlock } label: {
-                        ZStack {
-                            Circle().fill(Color.appBorder).frame(width: 40, height: 40)
-                            Image(systemName: "plus")
-                                .font(.system(size: 18))
-                                .foregroundColor(.appTextSub)
-                        }
-                    }
+                    AppIconButton(
+                        systemName: "plus",
+                        fill: Color.appBorder,
+                        diameter: 40,
+                        iconSize: 18,
+                        iconColor: .appTextSub
+                    ) { activeSheet = .addBlock }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -127,25 +126,6 @@ struct WorkoutDaySection: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
-    }
-
-    private var unitToggle: some View {
-        HStack(spacing: 0) {
-            ForEach(WeightUnit.allCases, id: \.self) { unit in
-                Button {
-                    displayUnit = unit
-                } label: {
-                    Text(unit.rawValue)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(displayUnit == unit ? .appText : .appTextTert)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(displayUnit == unit ? Color.appBorder : Color.clear)
-                }
-            }
-        }
-        .background(Color.appBorder.opacity(0.6))
-        .cornerRadius(12)
     }
 
     // A block row plus its drag-to-reorder wrapping. The drag preview reuses the

@@ -32,8 +32,8 @@ struct WorkoutBlockRow: View {
                 Spacer()
 
                 HStack(spacing: 8) {
-                    iconButton(systemName: "plus", color: .appTextTert, action: onAddSet)
-                    iconButton(systemName: "trash", color: .appTextTert, action: onDelete)
+                    AppIconButton(systemName: "plus", action: onAddSet)
+                    AppIconButton(systemName: "trash", action: onDelete)
                 }
             }
 
@@ -69,25 +69,6 @@ struct WorkoutBlockRow: View {
 
     private var typeBadge: some View {
         let t = block.type
-        return Text(t.label)
-            .font(.system(size: 11))
-            .foregroundColor(t.badgeColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(t.badgeColor.opacity(0.15))
-            .cornerRadius(100)
-    }
-
-    private func iconButton(systemName: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(Color.appBackground.opacity(0.45))
-                    .frame(width: 36, height: 36)
-                Image(systemName: systemName)
-                    .font(.system(size: 15))
-                    .foregroundColor(color)
-            }
-        }
+        return AppPillBadge(text: t.label, color: t.badgeColor, horizontalPadding: 8)
     }
 }

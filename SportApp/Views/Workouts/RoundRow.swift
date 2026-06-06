@@ -27,12 +27,7 @@ private struct RoundCountBadge: View {
     let count: Int
     var body: some View {
         if count > 1 {
-            Text("×\(count)")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.appBlue)
-                .padding(.horizontal, 6).padding(.vertical, 2)
-                .background(Color.appBlue.opacity(0.15))
-                .cornerRadius(100)
+            AppPillBadge(text: "×\(count)", color: .appBlue, fontWeight: .semibold)
         }
     }
 }
@@ -73,19 +68,9 @@ private struct SingleSetRow: View {
                     .foregroundColor(.appTextTert)
                 RoundCountBadge(count: count)
                 if let exName = exerciseLabel {
-                    Text(exName)
-                        .font(.system(size: 11))
-                        .foregroundColor(.appEmerald)
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Color.appEmerald.opacity(0.15))
-                        .cornerRadius(100)
+                    AppPillBadge(text: exName, color: .appEmerald)
                 } else if let label = set.type.label {
-                    Text(label)
-                        .font(.system(size: 11))
-                        .foregroundColor(.appOrange)
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Color.appOrange.opacity(0.15))
-                        .cornerRadius(100)
+                    AppPillBadge(text: label, color: .appOrange)
                 }
             }
             Spacer()

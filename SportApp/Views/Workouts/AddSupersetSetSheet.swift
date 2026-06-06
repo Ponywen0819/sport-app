@@ -58,19 +58,7 @@ struct AddSupersetSetSheet: View {
                     // Shared unit toggle
                     HStack {
                         Spacer()
-                        HStack(spacing: 0) {
-                            ForEach(WeightUnit.allCases, id: \.self) { unit in
-                                Button { switchUnit(to: unit) } label: {
-                                    Text(unit.rawValue)
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundColor(inputUnit == unit ? .appText : .appTextTert)
-                                        .padding(.horizontal, 20).padding(.vertical, 8)
-                                        .background(inputUnit == unit ? Color.appBorder : Color.clear)
-                                }
-                            }
-                        }
-                        .background(Color.appBorder.opacity(0.6))
-                        .cornerRadius(10)
+                        AppUnitToggle(selected: inputUnit) { switchUnit(to: $0) }
                     }
 
                     // Exercise A
@@ -129,27 +117,13 @@ struct AddSupersetSetSheet: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(color)
             HStack(spacing: 12) {
-                inputField(label: "重量", text: weightInput, isDecimal: true)
-                inputField(label: "次數", text: repsInput, isDecimal: false)
+                AppNumberField(label: "重量", text: weightInput, isDecimal: true)
+                AppNumberField(label: "次數", text: repsInput)
             }
         }
         .padding(14)
         .background(Color.appCard)
         .cornerRadius(14)
-    }
-
-    private func inputField(label: String, text: Binding<String>, isDecimal: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label).font(.system(size: 12, weight: .medium)).foregroundColor(.appTextTert)
-            TextField("0", text: text)
-                .keyboardType(isDecimal ? .decimalPad : .numberPad)
-                .font(.system(size: 26, weight: .semibold))
-                .foregroundColor(.appText)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity).frame(height: 56)
-                .background(Color.appBackground)
-                .cornerRadius(12)
-        }
     }
 
     private func switchUnit(to unit: WeightUnit) {
