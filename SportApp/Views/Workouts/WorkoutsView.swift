@@ -5,7 +5,10 @@ import SwiftData
 
 struct WorkoutsView: View {
     @State private var selectedDate = Date()
-    @State private var displayUnit: WeightUnit = .pounds
+    // Persisted global display unit — the default for new blocks and for any
+    // block without its own recorded unit. Individual blocks still remember the
+    // unit they were entered in (see WorkoutRepository.preferredUnit).
+    @AppStorage("preferredWeightUnit") private var displayUnit: WeightUnit = .pounds
     @Query private var allBlocks: [WorkoutBlock]
 
     private let calendar = Calendar.current
