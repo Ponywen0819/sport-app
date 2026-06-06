@@ -133,7 +133,7 @@ struct ProfileView: View {
             Text("關於")
                 .font(.appCardLabel)
                 .foregroundColor(.appTextSub)
-            Text("運動紀錄 v1.0")
+            Text("運動紀錄 v2026.06.06")
                 .font(.appCaption)
                 .foregroundColor(.appTextTert)
             Text("資料存儲於你的 Notion workspace")
