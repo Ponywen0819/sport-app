@@ -45,7 +45,7 @@ struct BodyIndexView: View {
 
                 if let latest = latest {
                     Text("最後量測：\(DateFormat.dayKey(latest.date))")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -81,7 +81,7 @@ struct BodyIndexView: View {
                 }
             }
             Text("身體指標")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
                 .padding(.leading, 4)
             Spacer()
@@ -149,7 +149,7 @@ struct BodyIndexView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
                 if filled {
                     Image(systemName: "clock.arrow.circlepath")
@@ -159,11 +159,11 @@ struct BodyIndexView: View {
             }
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(value)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.appStatValue)
                     .foregroundColor(value == "—" ? .appTextTert : (filled ? color.opacity(0.6) : color))
                 if !unit.isEmpty && value != "—" {
                     Text(unit)
-                        .font(.system(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                 }
             }
@@ -187,14 +187,14 @@ struct BodyIndexView: View {
         return VStack(spacing: 12) {
             HStack {
                 Text("趨勢")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appTextSub)
                 Spacer()
                 HStack(spacing: 4) {
                     ForEach(ChartMetric.allCases, id: \.self) { m in
                         Button { chartMetric = m } label: {
                             Text(m.rawValue)
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.appMicro)
                                 .foregroundColor(chartMetric == m ? .appText : .appTextTert)
                                 .padding(.horizontal, 8).padding(.vertical, 4)
                                 .background(chartMetric == m ? Color.appBorder : Color.clear)
@@ -209,7 +209,7 @@ struct BodyIndexView: View {
                     .frame(height: 160)
             } else {
                 Text("需要兩筆以上資料才能顯示趨勢")
-                    .font(.system(size: 13))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
@@ -226,7 +226,7 @@ struct BodyIndexView: View {
         VStack(spacing: 8) {
             HStack {
                 Text("歷史紀錄")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appTextSub)
                 Spacer()
             }
@@ -239,7 +239,7 @@ struct BodyIndexView: View {
             if records.count > 5 {
                 Button { showAllHistory.toggle() } label: {
                     Text(showAllHistory ? "收起" : "顯示全部 \(records.count) 筆")
-                        .font(.system(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(.appBlue)
                 }
                 .frame(maxWidth: .infinity)
@@ -251,21 +251,21 @@ struct BodyIndexView: View {
     private func historyRow(record: BodyIndex) -> some View {
         HStack {
             Text(DateFormat.dayKey(record.date))
-                .font(.system(size: 14))
+                .font(.appBody)
                 .foregroundColor(.appTextTert)
             Spacer()
             HStack(spacing: 14) {
                 Text("\(fmtVal(record.weight)) kg")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appBlue)
                 if let fat = record.bodyFatPercentage {
                     Text("\(fmtVal(fat))%")
-                        .font(.system(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(.appOrange)
                 }
                 if let muscle = record.skeletalMuscleWeight {
                     Text("\(fmtVal(muscle)) kg")
-                        .font(.system(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(.appEmerald)
                 }
             }
@@ -291,10 +291,10 @@ struct BodyIndexView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.appTextTert)
             Text("尚無量測資料")
-                .font(.system(size: 15))
+                .font(.appBody)
                 .foregroundColor(.appTextTert)
             Text("點擊右上角 + 新增第一筆量測")
-                .font(.system(size: 13))
+                .font(.appCaption)
                 .foregroundColor(.appTextMuted)
         }
         .frame(maxWidth: .infinity)
@@ -374,7 +374,7 @@ private struct BodyIndexLineChart: View {
 
                     if i == 0 || i == count - 1 {
                         Text(fmtVal(data[i].1))
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.appMicro)
                             .foregroundColor(color)
                             .position(x: points[i].x, y: max(points[i].y - 13, 8))
                     }
@@ -384,11 +384,11 @@ private struct BodyIndexLineChart: View {
             // Date axis
             HStack {
                 Text(DateFormat.shortDate(data.first!.0))
-                    .font(.system(size: 10))
+                    .font(.appMicro)
                     .foregroundColor(.appTextTert)
                 Spacer()
                 Text(DateFormat.shortDate(data.last!.0))
-                    .font(.system(size: 10))
+                    .font(.appMicro)
                     .foregroundColor(.appTextTert)
             }
         }

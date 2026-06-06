@@ -55,7 +55,7 @@ struct NotionImportView: View {
                 }
             }
             Text("匯入 Notion 資料")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
                 .padding(.leading, 4)
             Spacer()
@@ -70,7 +70,7 @@ struct NotionImportView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Internal Integration Token")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appLabel)
                     .foregroundColor(.appTextTert)
                 SecureField("secret_xxx...", text: $token)
                     .font(.system(size: 14))
@@ -85,7 +85,7 @@ struct NotionImportView: View {
                         else           { KeychainHelper.saveToken(new) }
                     }
                 Text("在 Notion 設定 → 整合 頁面建立一個 internal integration，複製 token 後貼入此處")
-                    .font(.system(size: 11))
+                    .font(.appMicro)
                     .foregroundColor(.appTextMuted)
             }
         }
@@ -109,7 +109,7 @@ struct NotionImportView: View {
             }
 
             Text("在 Notion 中開啟資料庫頁面，從網址列複製資料庫 ID（32 位元字串）")
-                .font(.system(size: 11))
+                .font(.appMicro)
                 .foregroundColor(.appTextMuted)
         }
         .padding(16)
@@ -120,7 +120,7 @@ struct NotionImportView: View {
     private func dbField(label: String, hint: String, value: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.appLabel)
                 .foregroundColor(.appTextTert)
             TextField(hint, text: value)
                 .font(.system(size: 13))
@@ -196,11 +196,11 @@ struct NotionImportView: View {
                 Divider().background(Color.appBorder)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("錯誤訊息")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.appControlLabel)
                         .foregroundColor(.appRed)
                     ForEach(r.errors, id: \.self) { err in
                         Text("• \(err)")
-                            .font(.system(size: 11))
+                            .font(.appMicro)
                             .foregroundColor(.appRed.opacity(0.8))
                     }
                 }
@@ -214,7 +214,7 @@ struct NotionImportView: View {
     private func resultRow(label: String, imported: Int, skipped: Int) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13))
+                .font(.appCaption)
                 .foregroundColor(.appTextSub)
             Spacer()
             HStack(spacing: 8) {
@@ -223,7 +223,7 @@ struct NotionImportView: View {
                         .font(.system(size: 11))
                         .foregroundColor(.appEmerald)
                     Text("\(imported) 匯入")
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appEmerald)
                 }
                 if skipped > 0 {
@@ -232,7 +232,7 @@ struct NotionImportView: View {
                             .font(.system(size: 11))
                             .foregroundColor(.appTextMuted)
                         Text("\(skipped) 跳過")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextMuted)
                     }
                 }
@@ -245,7 +245,7 @@ struct NotionImportView: View {
     private func sectionTitle(_ text: String) -> some View {
         HStack {
             Text(text)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.appCardLabel)
                 .foregroundColor(.appTextSub)
             Spacer()
         }

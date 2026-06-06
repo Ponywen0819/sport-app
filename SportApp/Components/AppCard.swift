@@ -19,7 +19,7 @@ struct SectionLabel: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 11, weight: .medium))
+            .font(.appMicro)
             .foregroundColor(.appTextTert)
             .tracking(1)
             .frame(maxWidth: .infinity, alignment: .leading)

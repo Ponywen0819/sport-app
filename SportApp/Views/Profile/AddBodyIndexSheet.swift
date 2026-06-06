@@ -96,7 +96,7 @@ struct AddBodyIndexSheet: View {
     private var dateRow: some View {
         HStack {
             Text("量測日期")
-                .font(.system(size: 14))
+                .font(.appBody)
                 .foregroundColor(.appTextSub)
             Spacer()
             DatePicker("", selection: $date, displayedComponents: .date)
@@ -125,18 +125,18 @@ struct AddBodyIndexSheet: View {
                             EmptyView()
                         case .analyzing:
                             Label("AI 分析中...", systemImage: "sparkles")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.appBody)
                                 .foregroundColor(.appPurple)
                         case .done:
                             Label("填入完成", systemImage: "checkmark.circle.fill")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.appBody)
                                 .foregroundColor(.appEmerald)
                         case .error(let msg):
                             Label("分析失敗", systemImage: "xmark.circle.fill")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.appBody)
                                 .foregroundColor(.appRed)
                             Text(msg)
-                                .font(.system(size: 11))
+                                .font(.appMicro)
                                 .foregroundColor(.appRed.opacity(0.8))
                                 .lineLimit(2)
                         }
@@ -152,7 +152,7 @@ struct AddBodyIndexSheet: View {
                     showCamera = true
                 } label: {
                     Label("拍照", systemImage: "camera.fill")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.appBody)
                         .foregroundColor(.appTextSub)
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)
@@ -164,7 +164,7 @@ struct AddBodyIndexSheet: View {
                 // Photo library button
                 PhotosPicker(selection: $pickerItem, matching: .images) {
                     Label("從相簿", systemImage: "photo.fill")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.appBody)
                         .foregroundColor(.appTextSub)
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)
@@ -226,12 +226,12 @@ struct AddBodyIndexSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 3) {
                 Text(label)
-                    .font(.system(size: 11))
+                    .font(.appMicro)
                     .foregroundColor(.appTextTert)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 if required {
-                    Text("*").font(.system(size: 11)).foregroundColor(.appRed)
+                    Text("*").font(.appMicro).foregroundColor(.appRed)
                 }
             }
             TextField("—", text: text)

@@ -50,7 +50,7 @@ struct LLMSettingsView: View {
                 }
             }
             Text("LLM API 設定")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
                 .padding(.leading, 4)
             Spacer()
@@ -122,7 +122,7 @@ struct LLMSettingsView: View {
     private func inputField(label: String, hint: String, value: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.appLabel)
                 .foregroundColor(.appTextTert)
             TextField(hint, text: value)
                 .font(.system(size: 14))
@@ -140,7 +140,7 @@ struct LLMSettingsView: View {
     private func secureInputField(label: String, hint: String, value: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.appLabel)
                 .foregroundColor(.appTextTert)
             SecureField(hint, text: value)
                 .font(.system(size: 14))
@@ -159,7 +159,7 @@ struct LLMSettingsView: View {
         VStack(spacing: 12) {
             HStack {
                 Text("連線測試")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appTextSub)
                 Spacer()
             }
@@ -171,17 +171,17 @@ struct LLMSettingsView: View {
                 HStack(spacing: 8) {
                     ProgressView().tint(.appTextSub)
                     Text("傳送中...")
-                        .font(.system(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             case .success(let reply):
                 VStack(alignment: .leading, spacing: 6) {
                     Label("回覆成功", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.appLabel)
                         .foregroundColor(.appEmerald)
                     Text(reply)
-                        .font(.system(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(.appTextSub)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
@@ -191,10 +191,10 @@ struct LLMSettingsView: View {
             case .failure(let msg):
                 VStack(alignment: .leading, spacing: 6) {
                     Label("失敗", systemImage: "xmark.circle.fill")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.appLabel)
                         .foregroundColor(.appRed)
                     Text(msg)
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appRed.opacity(0.8))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)

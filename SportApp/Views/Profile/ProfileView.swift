@@ -24,7 +24,7 @@ struct ProfileView: View {
     private var titleSection: some View {
         HStack {
             Text("個人設定")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
             Spacer()
         }
@@ -119,42 +119,10 @@ struct ProfileView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.appBody)
                     .foregroundColor(.appText)
                 Text(description)
-                    .font(.system(size: 12))
-                    .foregroundColor(.appTextTert)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .foregroundColor(.appTextMuted)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(Color.appCard)
-        .cornerRadius(16)
-    }
-
-    private func settingsRowPlain(icon: String, iconColor: Color, iconBg: Color, title: String, description: String) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(iconBg)
-                    .frame(width: 36, height: 36)
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(iconColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.appText)
-                Text(description)
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextTert)
             }
 
@@ -174,13 +142,13 @@ struct ProfileView: View {
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("關於")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.appCardLabel)
                 .foregroundColor(.appTextSub)
             Text("運動紀錄 v1.0")
-                .font(.system(size: 12))
+                .font(.appCaption)
                 .foregroundColor(.appTextTert)
             Text("資料存儲於你的 Notion workspace")
-                .font(.system(size: 12))
+                .font(.appCaption)
                 .foregroundColor(.appTextMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

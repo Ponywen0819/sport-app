@@ -68,7 +68,7 @@ struct DateSelectorView: View {
                 Spacer()
 
                 Text(displayTitle)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appCardLabel)
                     .foregroundColor(.appText)
 
                 Spacer()
@@ -87,7 +87,7 @@ struct DateSelectorView: View {
             HStack(spacing: 0) {
                 ForEach(dayLabels, id: \.self) { label in
                     Text(label)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.appMicro)
                         .foregroundColor(.appTextTert)
                         .frame(maxWidth: .infinity)
                 }
@@ -120,7 +120,7 @@ struct DateSelectorView: View {
                     selectedDate = Date()
                 } label: {
                     Text("回到今天")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.appLabel)
                         .foregroundColor(.appBlue)
                         .padding(.vertical, 4)
                 }

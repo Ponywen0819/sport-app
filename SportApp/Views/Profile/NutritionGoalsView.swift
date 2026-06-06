@@ -70,7 +70,7 @@ struct NutritionGoalsView: View {
                 }
             }
             Text("飲食目標")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
                 .padding(.leading, 4)
             Spacer()
@@ -81,10 +81,10 @@ struct NutritionGoalsView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
                 Text(label)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appLabel)
                     .foregroundColor(.appTextTert)
                 Text("(\(unit))")
-                    .font(.system(size: 12))
+                    .font(.appCaption)
                     .foregroundColor(.appTextMuted)
             }
             TextField("0", text: value)

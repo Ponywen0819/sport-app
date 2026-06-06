@@ -57,7 +57,7 @@ struct ExercisesView: View {
                 }
             }
             Text("動作管理")
-                .font(.system(size: 20, weight: .bold))
+                .font(.appPageTitle)
                 .foregroundColor(.appText)
                 .padding(.leading, 4)
             Spacer()
@@ -105,7 +105,7 @@ struct ExercisesView: View {
                         selectedEquipment = selectedEquipment == eq ? nil : eq
                     } label: {
                         Text(eq)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.appControlLabel)
                             .foregroundColor(selectedEquipment == eq ? (equipmentColors[eq] ?? .appTextSub) : .appTextTert)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
@@ -157,30 +157,31 @@ struct ExercisesView: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.appBody)
                     .foregroundColor(.appText)
                 HStack(spacing: 6) {
                     if let brand = exercise.brand, !brand.isEmpty {
                         Text(brand)
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appPurple)
                         Text("·")
-                            .font(.system(size: 12))
+                            .font(.appCaption)
                             .foregroundColor(.appTextTert)
                     }
                     Text(exercise.muscleGroups.joined(separator: " · "))
-                        .font(.system(size: 12))
+                        .font(.appCaption)
                         .foregroundColor(.appTextTert)
                 }
             }
             Spacer()
-            Text(exercise.equipment)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(equipmentColors[exercise.equipment] ?? .appTextTert)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background((equipmentColors[exercise.equipment] ?? .appBlue).opacity(0.15))
-                .cornerRadius(100)
+            AppPillBadge(
+                text: exercise.equipment,
+                color: equipmentColors[exercise.equipment] ?? .appTextTert,
+                fontWeight: .semibold,
+                horizontalPadding: 10,
+                verticalPadding: 4,
+                background: (equipmentColors[exercise.equipment] ?? .appBlue).opacity(0.15)
+            )
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 14)
@@ -214,7 +215,7 @@ private struct AddExerciseSheet: View {
                     // Name
                     VStack(alignment: .leading, spacing: 6) {
                         Text("動作名稱")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.appLabel)
                             .foregroundColor(.appTextTert)
                         TextField("例：臥推", text: $name)
                             .font(.system(size: 15))
@@ -229,7 +230,7 @@ private struct AddExerciseSheet: View {
                     // Equipment
                     VStack(alignment: .leading, spacing: 10) {
                         Text("器材")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.appLabel)
                             .foregroundColor(.appTextTert)
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                             ForEach(equipmentOptions, id: \.self) { eq in
@@ -239,7 +240,7 @@ private struct AddExerciseSheet: View {
                                     }
                                 } label: {
                                     Text(eq)
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.appControlLabel)
                                         .foregroundColor(selectedEquipment == eq ? (equipmentColors[eq] ?? .appBlue) : .appTextTert)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 10)
@@ -267,7 +268,7 @@ private struct AddExerciseSheet: View {
                     if selectedEquipment == "機械" {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("廠牌（選填）")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.appLabel)
                                 .foregroundColor(.appTextTert)
                             TextField("例：Life Fitness", text: $brand)
                                 .font(.system(size: 15))
@@ -284,7 +285,7 @@ private struct AddExerciseSheet: View {
                     // Muscle groups
                     VStack(alignment: .leading, spacing: 10) {
                         Text("主要肌群（可多選）")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.appLabel)
                             .foregroundColor(.appTextTert)
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                             ForEach(muscleOptions, id: \.self) { muscle in
@@ -296,7 +297,7 @@ private struct AddExerciseSheet: View {
                                     }
                                 } label: {
                                     Text(muscle)
-                                        .font(.system(size: 13, weight: .medium))
+                                        .font(.appControlLabel)
                                         .foregroundColor(selectedMuscles.contains(muscle) ? .appBlue : .appTextTert)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 10)

@@ -156,8 +156,8 @@ struct AddBlockSheet: View {
 
         return HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text(ex.name).font(.system(size: 15, weight: .medium)).foregroundColor(.appText)
-                Text(ex.muscleGroups.joined(separator: " · ")).font(.system(size: 12)).foregroundColor(.appTextTert)
+                Text(ex.name).font(.appBody).foregroundColor(.appText)
+                Text(ex.muscleGroups.joined(separator: " · ")).font(.appCaption).foregroundColor(.appTextTert)
             }
             Spacer()
             if blockType == .superset {
@@ -194,7 +194,7 @@ struct AddBlockSheet: View {
             Text(selectedExercises.isEmpty
                  ? "請選擇 2 個動作"
                  : selectedExercises.count == 1 ? "已選 1/2" : "已選 2/2")
-                .font(.system(size: 14, weight: .medium))
+                .font(.appBody)
                 .foregroundColor(selectedExercises.count == 2 ? .appText : .appTextTert)
             Spacer()
             Button {
@@ -294,7 +294,7 @@ struct AddBlockSheet: View {
             // Show exercise names as read-only chips
             HStack(spacing: 8) {
                 exerciseChip(exA.name, color: .appEmerald)
-                Image(systemName: "plus").font(.system(size: 12)).foregroundColor(.appTextTert)
+                Image(systemName: "plus").font(.appCaption).foregroundColor(.appTextTert)
                 exerciseChip(exB.name, color: .appBlue)
             }
 
@@ -350,7 +350,7 @@ struct AddBlockSheet: View {
                 ForEach(items, id: \.self) { item in
                     Button { selected.wrappedValue = selected.wrappedValue == item ? nil : item } label: {
                         Text(item)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.appControlLabel)
                             .foregroundColor(selected.wrappedValue == item ? color : .appTextTert)
                             .padding(.horizontal, 14).padding(.vertical, 8)
                             .background(selected.wrappedValue == item ? color.opacity(0.15) : Color.appCard)
@@ -390,7 +390,7 @@ struct AddBlockSheet: View {
     }
 
     private func previewText(_ text: String) -> some View {
-        Text(text).font(.system(size: 14, weight: .medium)).foregroundColor(.appTextTert)
+        Text(text).font(.appBody).foregroundColor(.appTextTert)
             .frame(maxWidth: .infinity).multilineTextAlignment(.center)
     }
 
