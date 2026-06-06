@@ -114,16 +114,12 @@ struct WorkoutDaySection: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "dumbbell")
-                .font(.system(size: 36))
-                .foregroundColor(.appTextTert)
-            Text("尚無紀錄，點擊 + 新增動作")
-                .font(.system(size: 14))
-                .foregroundColor(.appTextTert)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        EmptyStateView(
+            icon: "dumbbell",
+            title: "尚無紀錄，點擊 + 新增動作",
+            iconSize: 36,
+            verticalPadding: 32
+        )
     }
 
     // A block row plus its drag-to-reorder wrapping. The drag preview reuses the

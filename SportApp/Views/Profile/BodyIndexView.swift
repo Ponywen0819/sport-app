@@ -259,19 +259,12 @@ struct BodyIndexView: View {
     // MARK: Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "person.crop.circle")
-                .font(.system(size: 48))
-                .foregroundColor(.appTextTert)
-            Text("尚無量測資料")
-                .font(.appBody)
-                .foregroundColor(.appTextTert)
-            Text("點擊右上角 + 新增第一筆量測")
-                .font(.appCaption)
-                .foregroundColor(.appTextMuted)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        EmptyStateView(
+            icon: "person.crop.circle",
+            title: "尚無量測資料",
+            subtitle: "點擊右上角 + 新增第一筆量測",
+            verticalPadding: 60
+        )
     }
 
     // MARK: Helpers
