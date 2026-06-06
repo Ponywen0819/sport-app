@@ -44,13 +44,9 @@ struct AddStandardSetSheet: View {
         // a drop, the user probably wants another drop round.
         _mode = State(initialValue: sorted.last?.type == .drop ? .dropSet : .single)
 
-        func fmt(_ kg: Double, unit: WeightUnit) -> String {
-            String(format: "%.1f", unit == .pounds ? kg * 2.20462 : kg)
-        }
-
         // Single pre-fill: last normal set
         if let n = lastNormal {
-            _singleWeightInput = State(initialValue: fmt(n.weightKg, unit: displayUnit))
+            _singleWeightInput = State(initialValue: displayUnit.fieldValue(n.weightKg))
             _singleRepsInput   = State(initialValue: "\(n.reps)")
         } else {
             _singleWeightInput = State(initialValue: "")
@@ -59,13 +55,13 @@ struct AddStandardSetSheet: View {
 
         // Drop-set pre-fill: last (normal, drop) pair if any, otherwise derive from last normal
         if let n = lastNormal {
-            _firstWeightInput = State(initialValue: fmt(n.weightKg, unit: displayUnit))
+            _firstWeightInput = State(initialValue: displayUnit.fieldValue(n.weightKg))
             _firstRepsInput   = State(initialValue: "\(n.reps)")
             if let d = lastDrop {
-                _dropWeightInput = State(initialValue: fmt(d.weightKg, unit: displayUnit))
+                _dropWeightInput = State(initialValue: displayUnit.fieldValue(d.weightKg))
                 _dropRepsInput   = State(initialValue: "\(d.reps)")
             } else {
-                _dropWeightInput = State(initialValue: fmt(n.weightKg * 0.8, unit: displayUnit))
+                _dropWeightInput = State(initialValue: displayUnit.fieldValue(n.weightKg * 0.8))
                 _dropRepsInput   = State(initialValue: "\(Int((Double(n.reps) * 1.25).rounded()))")
             }
         } else {
@@ -78,20 +74,11 @@ struct AddStandardSetSheet: View {
 
     // MARK: - Parsing
 
-    private func parseKg(_ s: String) -> Double? {
-        guard let w = Double(s), w > 0 else { return nil }
-        return inputUnit == .pounds ? w / 2.20462 : w
-    }
-    private func parseReps(_ s: String) -> Int? {
-        guard let r = Int(s), r > 0 else { return nil }
-        return r
-    }
-
-    private var singleKg:   Double? { parseKg(singleWeightInput) }
+    private var singleKg:   Double? { inputUnit.parseToKg(singleWeightInput) }
     private var singleReps: Int?    { parseReps(singleRepsInput) }
-    private var firstKg:    Double? { parseKg(firstWeightInput) }
+    private var firstKg:    Double? { inputUnit.parseToKg(firstWeightInput) }
     private var firstReps:  Int?    { parseReps(firstRepsInput) }
-    private var dropKg:     Double? { parseKg(dropWeightInput) }
+    private var dropKg:     Double? { inputUnit.parseToKg(dropWeightInput) }
     private var dropReps:   Int?    { parseReps(dropRepsInput) }
 
     private var canSave: Bool {
@@ -103,9 +90,7 @@ struct AddStandardSetSheet: View {
 
     private func wStr(_ kg: Double?) -> String {
         guard let kg else { return "—" }
-        return inputUnit == .pounds
-            ? "\(Int((kg * 2.20462).rounded())) 磅"
-            : "\(Int(kg)) kg"
+        return inputUnit.format(kg)
     }
 
     private var previewText: String {
@@ -301,13 +286,9 @@ struct AddStandardSetSheet: View {
 
     private func switchUnit(to unit: WeightUnit) {
         guard inputUnit != unit else { return }
-        func conv(_ s: String) -> String {
-            guard let w = Double(s) else { return s }
-            return String(format: "%.1f", unit == .kg ? w / 2.20462 : w * 2.20462)
-        }
-        singleWeightInput = conv(singleWeightInput)
-        firstWeightInput  = conv(firstWeightInput)
-        dropWeightInput   = conv(dropWeightInput)
+        singleWeightInput = inputUnit.convert(singleWeightInput, to: unit)
+        firstWeightInput  = inputUnit.convert(firstWeightInput,  to: unit)
+        dropWeightInput   = inputUnit.convert(dropWeightInput,   to: unit)
         inputUnit = unit
     }
 

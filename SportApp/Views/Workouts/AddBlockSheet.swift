@@ -65,18 +65,13 @@ struct AddBlockSheet: View {
 
     // MARK: - Parse helpers
 
-    private func parseKg(_ s: String) -> Double? {
-        guard let w = Double(s), w > 0 else { return nil }
-        return inputUnit == .pounds ? w / 2.20462 : w
-    }
-    private func parseReps(_ s: String) -> Int? { guard let r = Int(s), r > 0 else { return nil }; return r }
     private func wStr(_ kg: Double?) -> String {
         guard let kg else { return "—" }
-        return inputUnit == .pounds ? "\(Int((kg * 2.20462).rounded())) 磅" : "\(Int(kg)) kg"
+        return inputUnit.format(kg)
     }
 
     // Single
-    private var singleKg: Double?   { parseKg(weightInput) }
+    private var singleKg: Double?   { inputUnit.parseToKg(weightInput) }
     private var singleReps: Int?    { parseReps(repsInput) }
     private var singleSets: Int     { max(1, Int(setsInput) ?? 1) }
     private var singleOK: Bool      { singleKg != nil && singleReps != nil }
@@ -86,17 +81,17 @@ struct AddBlockSheet: View {
     }
 
     // Drop Set
-    private var dropFirstKg: Double?   { parseKg(firstWeightInput) }
+    private var dropFirstKg: Double?   { inputUnit.parseToKg(firstWeightInput) }
     private var dropFirstReps: Int?    { parseReps(firstRepsInput) }
-    private var dropDropKg: Double?    { parseKg(dropWeightInput) }
+    private var dropDropKg: Double?    { inputUnit.parseToKg(dropWeightInput) }
     private var dropDropReps: Int?     { parseReps(dropRepsInput) }
     private var dropOK: Bool           { dropFirstKg != nil && dropFirstReps != nil && dropDropKg != nil && dropDropReps != nil }
     private var dropPreview: String    { "\(wStr(dropFirstKg)) × \(dropFirstReps.map{"\($0)"} ?? "—") 下  →  \(wStr(dropDropKg)) × \(dropDropReps.map{"\($0)"} ?? "—") 下" }
 
     // Superset
-    private var superAKg: Double?  { parseKg(weightAInput) }
+    private var superAKg: Double?  { inputUnit.parseToKg(weightAInput) }
     private var superAReps: Int?   { parseReps(repsAInput) }
-    private var superBKg: Double?  { parseKg(weightBInput) }
+    private var superBKg: Double?  { inputUnit.parseToKg(weightBInput) }
     private var superBReps: Int?   { parseReps(repsBInput) }
     private var superOK: Bool      { superAKg != nil && superAReps != nil && superBKg != nil && superBReps != nil }
 
@@ -470,12 +465,11 @@ struct AddBlockSheet: View {
 
     private func switchUnit(to unit: WeightUnit) {
         guard inputUnit != unit else { return }
-        func conv(_ s: String) -> String {
-            guard let w = Double(s) else { return s }
-            return String(format: "%.1f", unit == .kg ? w / 2.20462 : w * 2.20462)
-        }
-        weightInput = conv(weightInput); firstWeightInput = conv(firstWeightInput)
-        dropWeightInput = conv(dropWeightInput); weightAInput = conv(weightAInput); weightBInput = conv(weightBInput)
+        weightInput      = inputUnit.convert(weightInput, to: unit)
+        firstWeightInput = inputUnit.convert(firstWeightInput, to: unit)
+        dropWeightInput  = inputUnit.convert(dropWeightInput, to: unit)
+        weightAInput     = inputUnit.convert(weightAInput, to: unit)
+        weightBInput     = inputUnit.convert(weightBInput, to: unit)
         inputUnit = unit
     }
 

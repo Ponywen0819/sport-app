@@ -1,21 +1,6 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Weight Unit
-
-enum WeightUnit: String, CaseIterable {
-    case pounds = "磅"
-    case kg = "kg"
-
-    // Formats a stored kilogram value for display in this unit, rounded to a
-    // whole number with the unit suffix (e.g. "100 磅" / "45 kg").
-    func format(_ kg: Double) -> String {
-        self == .pounds
-            ? "\(Int((kg * 2.20462).rounded())) 磅"
-            : "\(Int(kg)) kg"
-    }
-}
-
 // MARK: - Main View
 
 struct WorkoutsView: View {

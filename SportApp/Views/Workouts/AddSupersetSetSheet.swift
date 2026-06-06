@@ -24,27 +24,15 @@ struct AddSupersetSetSheet: View {
         let lastA = sorted.filter { $0.orderIndex % 2 == 0 }.last
         let lastB = sorted.filter { $0.orderIndex % 2 == 1 }.last
 
-        func fmt(_ kg: Double, unit: WeightUnit) -> String {
-            String(format: "%.1f", unit == .pounds ? kg * 2.20462 : kg)
-        }
-
-        _weightAInput = State(initialValue: lastA.map { fmt($0.weightKg, unit: displayUnit) } ?? "")
+        _weightAInput = State(initialValue: lastA.map { displayUnit.fieldValue($0.weightKg) } ?? "")
         _repsAInput   = State(initialValue: lastA.map { "\($0.reps)" } ?? "")
-        _weightBInput = State(initialValue: lastB.map { fmt($0.weightKg, unit: displayUnit) } ?? "")
+        _weightBInput = State(initialValue: lastB.map { displayUnit.fieldValue($0.weightKg) } ?? "")
         _repsBInput   = State(initialValue: lastB.map { "\($0.reps)" } ?? "")
     }
 
-    private func parseKg(_ s: String) -> Double? {
-        guard let w = Double(s), w > 0 else { return nil }
-        return inputUnit == .pounds ? w / 2.20462 : w
-    }
-    private func parseReps(_ s: String) -> Int? {
-        guard let r = Int(s), r > 0 else { return nil }; return r
-    }
-
-    private var aKg: Double?   { parseKg(weightAInput) }
+    private var aKg: Double?   { inputUnit.parseToKg(weightAInput) }
     private var aReps: Int?    { parseReps(repsAInput) }
-    private var bKg: Double?   { parseKg(weightBInput) }
+    private var bKg: Double?   { inputUnit.parseToKg(weightBInput) }
     private var bReps: Int?    { parseReps(repsBInput) }
     private var canSave: Bool  { aKg != nil && aReps != nil && bKg != nil && bReps != nil }
 
@@ -166,12 +154,8 @@ struct AddSupersetSetSheet: View {
 
     private func switchUnit(to unit: WeightUnit) {
         guard inputUnit != unit else { return }
-        func conv(_ s: String) -> String {
-            guard let w = Double(s) else { return s }
-            return String(format: "%.1f", unit == .kg ? w / 2.20462 : w * 2.20462)
-        }
-        weightAInput = conv(weightAInput)
-        weightBInput = conv(weightBInput)
+        weightAInput = inputUnit.convert(weightAInput, to: unit)
+        weightBInput = inputUnit.convert(weightBInput, to: unit)
         inputUnit = unit
     }
 
