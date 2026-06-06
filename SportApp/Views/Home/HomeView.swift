@@ -45,7 +45,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                titleSection
+                PageTitle("運動紀錄", prominent: true)
                 weeklyTrainingCard
                 if let body = latestBody {
                     bodyMetricsCard(record: body)
@@ -67,17 +67,6 @@ struct HomeView: View {
         .background(Color.appBackground)
         .scrollContentBackground(.hidden)
         .navigationBarHidden(true)
-    }
-
-    // MARK: Title
-
-    private var titleSection: some View {
-        HStack {
-            Text("運動紀錄")
-                .font(.appTitle)
-                .foregroundColor(.appText)
-            Spacer()
-        }
     }
 
     // MARK: Weekly Training Card

@@ -41,7 +41,10 @@ struct WorkoutsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                titleSection
+                PageTitle("運動紀錄")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 4)
                 DateSelectorView(selectedDate: $selectedDate, trainedDates: trainedDates)
                     .padding(.horizontal, 16)
                 WeeklyWorkoutSummaryCard(setsByDay: setsByDay, todayIndex: todayIndex)
@@ -56,17 +59,6 @@ struct WorkoutsView: View {
         .navigationBarHidden(true)
     }
 
-    private var titleSection: some View {
-        HStack {
-            Text("運動紀錄")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 4)
-    }
 }
 
 #Preview {

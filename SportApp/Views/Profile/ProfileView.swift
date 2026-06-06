@@ -4,7 +4,7 @@ struct ProfileView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                titleSection
+                PageTitle("個人設定")
                 healthSection
                 nutritionSection
                 workoutSection
@@ -18,16 +18,6 @@ struct ProfileView: View {
         .background(Color.appBackground)
         .scrollContentBackground(.hidden)
         .navigationBarHidden(true)
-    }
-
-    // MARK: - Title
-    private var titleSection: some View {
-        HStack {
-            Text("個人設定")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-            Spacer()
-        }
     }
 
     // MARK: - Sections

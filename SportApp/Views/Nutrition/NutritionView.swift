@@ -24,7 +24,10 @@ struct NutritionView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                titleSection
+                PageTitle("今日飲食")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 4)
                 DateSelectorView(selectedDate: $selectedDate)
                     .padding(.horizontal, 16)
                 WeeklyNutritionCard(weekDates: weekDates, goalCalories: goalCalories)
@@ -44,17 +47,6 @@ struct NutritionView: View {
         .navigationBarHidden(true)
     }
 
-    private var titleSection: some View {
-        HStack {
-            Text("今日飲食")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 4)
-    }
 }
 
 // MARK: - Day Section (owns @Query for the selected date)
