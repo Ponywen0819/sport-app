@@ -44,7 +44,7 @@ struct BodyIndexView: View {
                 navHeader
 
                 if let latest = latest {
-                    Text("最後量測：\(dateFmt.string(from: latest.date))")
+                    Text("最後量測：\(DateFormat.dayKey(latest.date))")
                         .font(.system(size: 12))
                         .foregroundColor(.appTextTert)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -250,7 +250,7 @@ struct BodyIndexView: View {
 
     private func historyRow(record: BodyIndex) -> some View {
         HStack {
-            Text(dateFmt.string(from: record.date))
+            Text(DateFormat.dayKey(record.date))
                 .font(.system(size: 14))
                 .foregroundColor(.appTextTert)
             Spacer()
@@ -303,13 +303,6 @@ struct BodyIndexView: View {
 
     // MARK: Helpers
 
-    private let dateFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_TW")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
     private func fmtVal(_ v: Double) -> String {
         v.truncatingRemainder(dividingBy: 1) == 0
             ? "\(Int(v))"
@@ -327,12 +320,6 @@ struct BodyIndexView: View {
 private struct BodyIndexLineChart: View {
     let data: [(Date, Double)]
     let color: Color
-
-    private let axisFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MM/dd"
-        return f
-    }()
 
     var body: some View {
         VStack(spacing: 6) {
@@ -396,11 +383,11 @@ private struct BodyIndexLineChart: View {
 
             // Date axis
             HStack {
-                Text(axisFmt.string(from: data.first!.0))
+                Text(DateFormat.shortDate(data.first!.0))
                     .font(.system(size: 10))
                     .foregroundColor(.appTextTert)
                 Spacer()
-                Text(axisFmt.string(from: data.last!.0))
+                Text(DateFormat.shortDate(data.last!.0))
                     .font(.system(size: 10))
                     .foregroundColor(.appTextTert)
             }

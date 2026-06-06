@@ -11,9 +11,7 @@ struct WorkoutsView: View {
     private let calendar = Calendar.current
 
     private var trainedDates: Set<String> {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        return Set(allBlocks.filter { !$0.sets.isEmpty }.map { fmt.string(from: $0.date) })
+        Set(allBlocks.filter { !$0.sets.isEmpty }.map { DateFormat.dayKey($0.date) })
     }
 
     // Monday-indexed week containing today
@@ -26,12 +24,10 @@ struct WorkoutsView: View {
     }
 
     private var setsByDay: [Int?] {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        return weekDates.map { day in
-            let key = fmt.string(from: day)
+        weekDates.map { day in
+            let key = DateFormat.dayKey(day)
             let count = allBlocks
-                .filter { fmt.string(from: $0.date) == key }
+                .filter { DateFormat.dayKey($0.date) == key }
                 .reduce(0) { $0 + $1.sets.count }
             return count > 0 ? count : nil
         }

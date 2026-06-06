@@ -29,24 +29,16 @@ struct HomeView: View {
     }
 
     private var trainedDateKeys: Set<String> {
-        let fmt = dateFmt
-        return Set(allBlocks.filter { !$0.sets.isEmpty }.map { fmt.string(from: $0.date) })
+        Set(allBlocks.filter { !$0.sets.isEmpty }.map { DateFormat.dayKey($0.date) })
     }
 
     private var weekTrainingStatus: [Bool] {
-        let fmt = dateFmt
-        return weekDates.map { trainedDateKeys.contains(fmt.string(from: $0)) }
+        weekDates.map { trainedDateKeys.contains(DateFormat.dayKey($0)) }
     }
 
     private var trainedDaysCount: Int { weekTrainingStatus.filter { $0 }.count }
 
     private var latestBody: BodyIndex? { bodyRecords.first }
-
-    private let dateFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
 
     // MARK: Body
 
@@ -163,10 +155,6 @@ struct HomeView: View {
     }
 
     private func bodyMetricsCard(record: BodyIndex) -> some View {
-        let displayFmt = DateFormatter()
-        displayFmt.locale = Locale(identifier: "zh_TW")
-        displayFmt.dateFormat = "yyyy-MM-dd"
-
         let bodyFat = resolveBody(\.bodyFatPercentage)
         let muscle  = resolveBody(\.skeletalMuscleWeight)
 
@@ -177,7 +165,7 @@ struct HomeView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.appTextSub)
                     Spacer()
-                    Text(displayFmt.string(from: record.date))
+                    Text(DateFormat.dayKey(record.date))
                         .font(.system(size: 12))
                         .foregroundColor(.appTextMuted)
                 }

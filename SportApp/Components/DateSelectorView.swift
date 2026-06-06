@@ -32,12 +32,10 @@ struct DateSelectorView: View {
     }
 
     private func dateString(for day: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
         var comps = calendar.dateComponents([.year, .month], from: displayMonth)
         comps.day = day
         let date = calendar.date(from: comps)!
-        return formatter.string(from: date)
+        return DateFormat.dayKey(date)
     }
 
     private func isSelected(day: Int) -> Bool {

@@ -357,10 +357,8 @@ private struct WeeklyNutritionCard: View {
     private var recordedDays: Int { dayCalories.filter { $0 > 0 }.count }
 
     private var weekRange: String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MM/dd"
         guard let first = weekDates.first, let last = weekDates.last else { return "" }
-        return "\(fmt.string(from: first)) – \(fmt.string(from: last))"
+        return "\(DateFormat.shortDate(first)) – \(DateFormat.shortDate(last))"
     }
 
     private var avgCalories: Double {
