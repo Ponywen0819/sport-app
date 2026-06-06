@@ -1,16 +1,13 @@
 import SwiftUI
 
-struct AppCard<Content: View>: View {
-    let content: () -> Content
-
-    init(@ViewBuilder content: @escaping () -> Content) {
-        self.content = content
-    }
-
-    var body: some View {
-        content()
+extension View {
+    // Standard card surface: appCard fill with rounded corners. Apply any
+    // padding before this. The default 16 radius matches the design system's
+    // cards; smaller radii (14 / 12) suit inset fields and compact chips.
+    func appCard(cornerRadius: CGFloat = 16) -> some View {
+        self
             .background(Color.appCard)
-            .cornerRadius(16)
+            .cornerRadius(cornerRadius)
     }
 }
 

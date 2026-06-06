@@ -124,8 +124,7 @@ struct ProfileView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     // MARK: - About
@@ -143,8 +142,7 @@ struct ProfileView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 }
 

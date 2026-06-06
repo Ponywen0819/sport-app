@@ -146,8 +146,7 @@ struct BodyIndexView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     // MARK: Trend Chart
@@ -192,8 +191,7 @@ struct BodyIndexView: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     // MARK: History
@@ -248,8 +246,7 @@ struct BodyIndexView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
         .contextMenu {
             Button(role: .destructive) {
                 try? repo.delete(record)

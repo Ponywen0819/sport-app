@@ -145,8 +145,7 @@ private struct NutritionOverviewCard: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func goalRow(label: String, value: Double, goal: Double, unit: String, barColor: Color, textColor: Color) -> some View {
@@ -210,8 +209,7 @@ private struct NutritionSummaryTiles: View {
             tile(label: "熱量",   value: calories, unit: "kcal", color: .appRed)
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func tile(label: String, value: Double, unit: String, color: Color) -> some View {
@@ -307,8 +305,7 @@ private struct MealTrackerCard: View {
                 }
             }
         }
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func fmt(_ v: Double) -> String {
@@ -453,8 +450,7 @@ private struct WeeklyNutritionCard: View {
                 .padding(.bottom, 16)
             }
         }
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func statBox(label: String, value: String, subLabel: String, valueColor: Color = .appText) -> some View {

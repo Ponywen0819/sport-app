@@ -72,8 +72,7 @@ struct NotionImportView: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     // MARK: - DB IDs
@@ -95,8 +94,7 @@ struct NotionImportView: View {
                 .foregroundColor(.appTextMuted)
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func dbField(label: String, hint: String, value: Binding<String>) -> some View {
@@ -189,8 +187,7 @@ struct NotionImportView: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func resultRow(label: String, imported: Int, skipped: Int) -> some View {

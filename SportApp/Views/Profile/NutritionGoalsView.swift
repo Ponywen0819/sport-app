@@ -41,8 +41,7 @@ struct NutritionGoalsView: View {
                     }
                 }
                 .padding(16)
-                .background(Color.appCard)
-                .cornerRadius(16)
+                .appCard()
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)

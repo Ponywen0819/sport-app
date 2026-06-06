@@ -119,8 +119,7 @@ private struct SearchView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 44)
-        .background(Color.appCard)
-        .cornerRadius(12)
+        .appCard(cornerRadius: 12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder, lineWidth: 1))
     }
 
@@ -161,8 +160,7 @@ private struct SearchView: View {
                     .padding(.leading, 16)
             }
         }
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
     }
@@ -240,8 +238,7 @@ private struct IntakeView: View {
                     }
                 }
                 .padding(16)
-                .background(Color.appCard)
-                .cornerRadius(16)
+                .appCard()
 
                 // Intake input
                 VStack(alignment: .leading, spacing: 8) {
@@ -255,8 +252,7 @@ private struct IntakeView: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .frame(height: 64)
-                        .background(Color.appCard)
-                        .cornerRadius(16)
+                        .appCard()
                 }
 
                 // Live preview
@@ -273,8 +269,7 @@ private struct IntakeView: View {
                         }
                     }
                     .padding(16)
-                    .background(Color.appCard)
-                    .cornerRadius(16)
+                    .appCard()
                 }
 
                 Button {
@@ -363,8 +358,7 @@ private struct CreateFoodView: View {
                         .foregroundColor(.appText)
                         .padding(.horizontal, 14)
                         .frame(height: 48)
-                        .background(Color.appCard)
-                        .cornerRadius(12)
+                        .appCard(cornerRadius: 12)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -375,8 +369,7 @@ private struct CreateFoodView: View {
                         .foregroundColor(.appText)
                         .padding(.horizontal, 14)
                         .frame(height: 48)
-                        .background(Color.appCard)
-                        .cornerRadius(12)
+                        .appCard(cornerRadius: 12)
                 }
 
                 let basis = Double(basisStr) ?? 100
@@ -462,8 +455,7 @@ private struct CreateFoodView: View {
                 .cornerRadius(10)
         }
         .padding(12)
-        .background(Color.appCard)
-        .cornerRadius(14)
+        .appCard(cornerRadius: 14)
     }
 
     private func fmt(_ v: Double) -> String {
@@ -513,8 +505,7 @@ struct EditIntakeSheet: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .frame(height: 64)
-                        .background(Color.appCard)
-                        .cornerRadius(16)
+                        .appCard()
                 }
 
                 if let i = newIntake {
@@ -526,8 +517,7 @@ struct EditIntakeSheet: View {
                         previewCell(label: "碳水", value: record.carbs * ratio, unit: "g", color: .appGreen)
                     }
                     .padding(12)
-                    .background(Color.appCard)
-                    .cornerRadius(12)
+                    .appCard(cornerRadius: 12)
                 }
 
                 Button {

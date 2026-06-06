@@ -122,8 +122,7 @@ struct AddSupersetSetSheet: View {
             }
         }
         .padding(14)
-        .background(Color.appCard)
-        .cornerRadius(14)
+        .appCard(cornerRadius: 14)
     }
 
     private func switchUnit(to unit: WeightUnit) {

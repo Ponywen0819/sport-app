@@ -64,8 +64,7 @@ struct WorkoutDaySection: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .background(Color.appCard)
-                .cornerRadius(16)
+                .appCard()
             }
 
             VStack(spacing: 0) {
@@ -97,8 +96,7 @@ struct WorkoutDaySection: View {
                     }
                 }
             }
-            .background(Color.appCard)
-            .cornerRadius(16)
+            .appCard()
             .onDrop(of: [UTType.text], delegate: BlockReorderCancelDropDelegate(coordinator: reorder))
         }
         .sheet(item: $activeSheet) { target in
@@ -149,8 +147,7 @@ struct WorkoutDaySection: View {
                 onDelete: {}
             )
             .frame(maxWidth: 360)
-            .background(Color.appCard)
-            .cornerRadius(12)
+            .appCard(cornerRadius: 12)
             .onAppear {
                 reorder.begin(dragging: block, snapshot: blocks)
             }

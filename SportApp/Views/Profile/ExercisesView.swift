@@ -64,8 +64,7 @@ struct ExercisesView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
-        .background(Color.appCard)
-        .cornerRadius(12)
+        .appCard(cornerRadius: 12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder, lineWidth: 1))
         .padding(.horizontal, 16)
         .padding(.bottom, 10)
@@ -161,8 +160,7 @@ struct ExercisesView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 14)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 }
 

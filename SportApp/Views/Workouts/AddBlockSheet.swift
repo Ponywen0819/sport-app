@@ -252,7 +252,7 @@ struct AddBlockSheet: View {
                     AppNumberField(label: "組數（選填）", text: $setsInput)
                 }
             }
-            .padding(14).background(Color.appCard).cornerRadius(14)
+            .padding(14).appCard(cornerRadius: 14)
             previewText(singlePreview)
             addButton(enabled: singleOK) { saveSingle(exerciseA) }
         }
@@ -341,7 +341,7 @@ struct AddBlockSheet: View {
             Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundColor(.appTextTert)
             TextField("搜尋動作...", text: $searchText).font(.system(size: 15)).foregroundColor(.appText)
         }
-        .padding(.horizontal, 16).frame(height: 44).background(Color.appCard).cornerRadius(12)
+        .padding(.horizontal, 16).frame(height: 44).appCard(cornerRadius: 12)
     }
 
     private func chipRow(items: [String], selected: Binding<String?>, color: Color) -> some View {
@@ -386,7 +386,7 @@ struct AddBlockSheet: View {
             Text(title).font(.appControlLabel).foregroundColor(color)
             content()
         }
-        .padding(14).background(Color.appCard).cornerRadius(14)
+        .padding(14).appCard(cornerRadius: 14)
     }
 
     private func previewText(_ text: String) -> some View {

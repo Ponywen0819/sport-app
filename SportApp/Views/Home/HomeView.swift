@@ -95,8 +95,7 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private func dayColumn(index: Int, trained: Bool) -> some View {
@@ -177,8 +176,7 @@ struct HomeView: View {
                 }
             }
             .padding(16)
-            .background(Color.appCard)
-            .cornerRadius(16)
+            .appCard()
         }
         .buttonStyle(.plain)
     }
@@ -261,8 +259,7 @@ struct HomeView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     // MARK: Helpers
@@ -321,8 +318,7 @@ private struct HomeDayNutritionCard: View {
                 }
             }
             .padding(16)
-            .background(Color.appCard)
-            .cornerRadius(16)
+            .appCard()
         }
         .buttonStyle(.plain)
     }

@@ -95,8 +95,7 @@ struct LLMSettingsView: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     // MARK: - Fields
@@ -205,8 +204,7 @@ struct LLMSettingsView: View {
             .disabled(!canTest || { if case .loading = testState { return true } else { return false } }())
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private var canTest: Bool {

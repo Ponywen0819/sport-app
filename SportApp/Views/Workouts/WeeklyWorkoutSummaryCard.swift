@@ -74,7 +74,6 @@ struct WeeklyWorkoutSummaryCard: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 }

@@ -190,8 +190,7 @@ struct AddStandardSetSheet: View {
             }
         }
         .padding(14)
-        .background(Color.appCard)
-        .cornerRadius(14)
+        .appCard(cornerRadius: 14)
     }
 
     private var dropSetInputs: some View {
@@ -230,8 +229,7 @@ struct AddStandardSetSheet: View {
             content()
         }
         .padding(14)
-        .background(Color.appCard)
-        .cornerRadius(14)
+        .appCard(cornerRadius: 14)
     }
 
     private var previewLabel: some View {

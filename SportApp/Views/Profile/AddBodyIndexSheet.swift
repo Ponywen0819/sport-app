@@ -104,8 +104,7 @@ struct AddBodyIndexSheet: View {
                 .colorScheme(.dark)
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private var scanCard: some View {
@@ -190,8 +189,7 @@ struct AddBodyIndexSheet: View {
             }
         }
         .padding(16)
-        .background(Color.appCard)
-        .cornerRadius(16)
+        .appCard()
     }
 
     private var inputGrid: some View {
@@ -245,8 +243,7 @@ struct AddBodyIndexSheet: View {
                 .cornerRadius(10)
         }
         .padding(12)
-        .background(Color.appCard)
-        .cornerRadius(14)
+        .appCard(cornerRadius: 14)
     }
 
     // MARK: - Actions
