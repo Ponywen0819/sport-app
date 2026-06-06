@@ -41,7 +41,9 @@ struct BodyIndexView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                navHeader
+                NavHeader("身體指標", onBack: { dismiss() }) {
+                    NavHeaderButton(icon: "plus", fill: .appBorder) { showAddSheet = true }
+                }
 
                 if let latest = latest {
                     Text("最後量測：\(DateFormat.dayKey(latest.date))")
@@ -69,32 +71,6 @@ struct BodyIndexView: View {
     }
 
     // MARK: Nav Header
-
-    private var navHeader: some View {
-        HStack {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle().fill(Color.appCard).frame(width: 32, height: 32)
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-            Text("身體指標")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-                .padding(.leading, 4)
-            Spacer()
-            Button { showAddSheet = true } label: {
-                ZStack {
-                    Circle().fill(Color.appBorder).frame(width: 32, height: 32)
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-        }
-    }
 
     // MARK: Metrics Grid
 

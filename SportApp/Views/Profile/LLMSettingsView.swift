@@ -20,7 +20,7 @@ struct LLMSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                navHeader
+                NavHeader("LLM API 設定", onBack: { dismiss() })
                 configCard
                 testCard
             }
@@ -38,24 +38,6 @@ struct LLMSettingsView: View {
     }
 
     // MARK: - Header
-
-    private var navHeader: some View {
-        HStack {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle().fill(Color.appCard).frame(width: 32, height: 32)
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-            Text("LLM API 設定")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-                .padding(.leading, 4)
-            Spacer()
-        }
-    }
 
     // MARK: - Config Card
 

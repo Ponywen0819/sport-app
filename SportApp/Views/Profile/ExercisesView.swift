@@ -30,7 +30,12 @@ struct ExercisesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            NavHeader("動作管理", onBack: { dismiss() }) {
+                NavHeaderButton(icon: "plus", fill: .appBorder) { showAddSheet = true }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
             searchBar
             equipmentFilter
             exerciseList
@@ -45,35 +50,6 @@ struct ExercisesView: View {
     }
 
     // MARK: - Header
-
-    private var header: some View {
-        HStack {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle().fill(Color.appCard).frame(width: 32, height: 32)
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-            Text("動作管理")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-                .padding(.leading, 4)
-            Spacer()
-            Button { showAddSheet = true } label: {
-                ZStack {
-                    Circle().fill(Color.appBorder).frame(width: 32, height: 32)
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
-    }
 
     // MARK: - Search
 

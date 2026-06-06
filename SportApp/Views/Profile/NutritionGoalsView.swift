@@ -16,7 +16,7 @@ struct NutritionGoalsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                navHeader
+                NavHeader("飲食目標", onBack: { dismiss() })
 
                 VStack(spacing: 16) {
                     inputField(label: "每日熱量", unit: "kcal", value: $caloriesStr)
@@ -56,24 +56,6 @@ struct NutritionGoalsView: View {
             proteinStr  = goalProtein  > 0 ? "\(goalProtein)"  : ""
             carbsStr    = goalCarbs    > 0 ? "\(goalCarbs)"    : ""
             fatStr      = goalFat      > 0 ? "\(goalFat)"      : ""
-        }
-    }
-
-    private var navHeader: some View {
-        HStack {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle().fill(Color.appCard).frame(width: 32, height: 32)
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-            Text("飲食目標")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-                .padding(.leading, 4)
-            Spacer()
         }
     }
 

@@ -18,7 +18,7 @@ struct NotionImportView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                navHeader
+                NavHeader("匯入 Notion 資料", onBack: { dismiss() })
 
                 tokenCard
                 databaseIdsCard
@@ -43,24 +43,6 @@ struct NotionImportView: View {
     }
 
     // MARK: - Header
-
-    private var navHeader: some View {
-        HStack {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle().fill(Color.appCard).frame(width: 32, height: 32)
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appTextSub)
-                }
-            }
-            Text("匯入 Notion 資料")
-                .font(.appPageTitle)
-                .foregroundColor(.appText)
-                .padding(.leading, 4)
-            Spacer()
-        }
-    }
 
     // MARK: - Token
 
