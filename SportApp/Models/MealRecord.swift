@@ -6,6 +6,16 @@ enum MealType: String, CaseIterable {
     case lunch     = "午餐"
     case dinner    = "晚餐"
     case snack     = "點心"
+
+    // Maps a clock time to a meal slot, used to auto-assign scanned meals by
+    // upload time: 早餐 05–10, 午餐 11–16, otherwise 晚餐.
+    static func forTime(_ date: Date = Date(), calendar: Calendar = .current) -> MealType {
+        switch calendar.component(.hour, from: date) {
+        case 5...10:  return .breakfast
+        case 11...16: return .lunch
+        default:      return .dinner
+        }
+    }
 }
 
 @Model

@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 // MARK: - Sheet
 
@@ -326,6 +327,12 @@ private struct CreateFoodView: View {
     @State private var fatStr = ""
     @State private var carbsStr = ""
 
+    // Scan state
+    @State private var pickerItem:    PhotosPickerItem? = nil
+    @State private var selectedImage: UIImage?          = nil
+    @State private var showCamera:    Bool              = false
+    @State private var scanPhase:     PhotoScanPhase    = .idle
+
     private var canCreate: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
         && Double(caloriesStr) != nil
@@ -337,6 +344,15 @@ private struct CreateFoodView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                PhotoScanCard(
+                    image:      $selectedImage,
+                    pickerItem: $pickerItem,
+                    phase:      scanPhase,
+                    doneLabel:  "填入完成",
+                    onCamera:     { showCamera = true },
+                    onReanalyze:  { Task { await analyze() } }
+                )
+
                 VStack(alignment: .leading, spacing: 8) {
                     label("食物名稱", required: true)
                     TextField("例如：雞胸肉", text: $name)
@@ -405,6 +421,56 @@ private struct CreateFoodView: View {
         .background(Color.appBackground)
         .scrollContentBackground(.hidden)
         .navigationTitle("建立食物")
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker(image: $selectedImage)
+                .ignoresSafeArea()
+        }
+        .onChange(of: selectedImage) { _, img in
+            if img != nil { Task { await analyze() } }
+        }
+        .onChange(of: pickerItem) { _, item in
+            Task {
+                if let data = try? await item?.loadTransferable(type: Data.self),
+                   let img  = UIImage(data: data) {
+                    selectedImage = img
+                }
+            }
+        }
+    }
+
+    // MARK: - Scan
+
+    @MainActor
+    private func analyze() async {
+        guard let image = selectedImage else { return }
+        guard let service = FoodVisionService.fromStoredSettings() else {
+            scanPhase = .error(FoodVisionError.notConfigured.localizedDescription ?? "")
+            return
+        }
+
+        scanPhase = .analyzing
+        do {
+            // The create-food form represents one food, so take the first
+            // recognized item (the whole-meal flow is where multiple are used).
+            guard let food = try await service.recognizeFoods(image).first else {
+                scanPhase = .error("沒有辨識到食物，請換一張清楚的照片")
+                return
+            }
+            applyFoodScan(food)
+            scanPhase = .done
+        } catch {
+            scanPhase = .error(error.localizedDescription)
+        }
+    }
+
+    private func applyFoodScan(_ food: RecognizedFood) {
+        let trimmed = food.name.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty { name = trimmed }
+        basisStr    = fmt(food.grams)
+        caloriesStr = fmt(food.calories)
+        proteinStr  = fmt(food.protein)
+        fatStr      = fmt(food.fat)
+        carbsStr    = fmt(food.carbs)
     }
 
     private func label(_ text: String, required: Bool = false) -> some View {

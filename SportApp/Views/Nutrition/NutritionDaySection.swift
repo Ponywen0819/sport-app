@@ -18,6 +18,7 @@ struct NutritionDaySection: View {
 
     @State private var addingMealType: MealType? = nil
     @State private var editingRecord: MealRecord? = nil
+    @State private var showScanMeal = false
 
     init(date: Date, goalCalories: Int, goalProtein: Int, goalCarbs: Int, goalFat: Int) {
         self.date         = date
@@ -55,6 +56,9 @@ struct NutritionDaySection: View {
                 .padding(.horizontal, 16)
             }
 
+            scanMealButton
+                .padding(.horizontal, 16)
+
             ForEach(MealType.allCases, id: \.self) { type in
                 MealTrackerCard(
                     mealType: type,
@@ -71,6 +75,24 @@ struct NutritionDaySection: View {
         }
         .sheet(item: $editingRecord) { record in
             EditIntakeSheet(record: record)
+        }
+        .sheet(isPresented: $showScanMeal) {
+            ScanMealView(date: date)
+        }
+    }
+
+    private var scanMealButton: some View {
+        Button { showScanMeal = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "camera.viewfinder")
+                Text("拍照辨識整餐")
+            }
+            .font(.appBody)
+            .foregroundColor(.appPurple)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(Color.appPurple.opacity(0.1))
+            .cornerRadius(12)
         }
     }
 }

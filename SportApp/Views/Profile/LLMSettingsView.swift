@@ -298,16 +298,14 @@ struct LLMSettingsView: View {
     }
 
     private func runEmbeddingTest() {
-        let client = LLMClient(config: LLMConfig(
-            apiKey:         apiKey.trimmingCharacters(in: .whitespacesAndNewlines),
-            baseURL:        endpoint.trimmingCharacters(in: .whitespacesAndNewlines),
-            model:          modelName.trimmingCharacters(in: .whitespacesAndNewlines),
-            embeddingModel: embeddingModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let client = GeminiEmbeddingClient(config: GeminiEmbeddingConfig(
+            apiKey: apiKey.trimmingCharacters(in: .whitespacesAndNewlines),
+            model:  embeddingModel.trimmingCharacters(in: .whitespacesAndNewlines)
         ))
         embedState = .loading
         Task { @MainActor in
             do {
-                let vector  = try await client.embed("hi")
+                let vector  = try await client.embed(text: "hi")
                 let preview = vector.prefix(3)
                     .map { String(format: "%.4f", $0) }
                     .joined(separator: ", ")

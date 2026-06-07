@@ -19,18 +19,10 @@ struct AddBodyIndexSheet: View {
     @State private var mineralStr   = ""
 
     // MARK: - Scan State
-    @State private var pickerItem:       PhotosPickerItem? = nil
-    @State private var selectedImage:    UIImage?          = nil
-    @State private var showCamera:       Bool              = false
-    @State private var showSourceDialog: Bool              = false
-    @State private var scanPhase:        ScanPhase         = .idle
-
-    private enum ScanPhase {
-        case idle
-        case analyzing
-        case done
-        case error(String)
-    }
+    @State private var pickerItem:    PhotosPickerItem? = nil
+    @State private var selectedImage: UIImage?          = nil
+    @State private var showCamera:    Bool              = false
+    @State private var scanPhase:     PhotoScanPhase    = .idle
 
     // MARK: - Computed
     private var weight: Double? {
@@ -69,11 +61,6 @@ struct AddBodyIndexSheet: View {
                 }
             }
         }
-        .confirmationDialog("選擇照片來源", isPresented: $showSourceDialog) {
-            Button("拍照") { showCamera = true }
-            Button("從相簿選擇") { /* PhotosPicker handles it */ }
-            Button("取消", role: .cancel) {}
-        }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker(image: $selectedImage)
                 .ignoresSafeArea()
@@ -108,88 +95,14 @@ struct AddBodyIndexSheet: View {
     }
 
     private var scanCard: some View {
-        VStack(spacing: 12) {
-            // Thumbnail + phase feedback
-            if let img = selectedImage {
-                HStack(spacing: 12) {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 64, height: 64)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        switch scanPhase {
-                        case .idle:
-                            EmptyView()
-                        case .analyzing:
-                            Label("AI 分析中...", systemImage: "sparkles")
-                                .font(.appBody)
-                                .foregroundColor(.appPurple)
-                        case .done:
-                            Label("填入完成", systemImage: "checkmark.circle.fill")
-                                .font(.appBody)
-                                .foregroundColor(.appEmerald)
-                        case .error(let msg):
-                            Label("分析失敗", systemImage: "xmark.circle.fill")
-                                .font(.appBody)
-                                .foregroundColor(.appRed)
-                            Text(msg)
-                                .font(.appMicro)
-                                .foregroundColor(.appRed.opacity(0.8))
-                                .lineLimit(2)
-                        }
-                    }
-                    Spacer()
-                }
-            }
-
-            // Buttons row
-            HStack(spacing: 10) {
-                // Camera button
-                Button {
-                    showCamera = true
-                } label: {
-                    Label("拍照", systemImage: "camera.fill")
-                        .font(.appBody)
-                        .foregroundColor(.appTextSub)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(Color.appBackground)
-                        .cornerRadius(10)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder, lineWidth: 1))
-                }
-
-                // Photo library button
-                PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Label("從相簿", systemImage: "photo.fill")
-                        .font(.appBody)
-                        .foregroundColor(.appTextSub)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(Color.appBackground)
-                        .cornerRadius(10)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder, lineWidth: 1))
-                }
-
-                // Re-analyse button (only after image is selected)
-                if selectedImage != nil {
-                    Button {
-                        Task { await analyze() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 15))
-                            .foregroundColor(.appPurple)
-                            .frame(width: 40, height: 40)
-                            .background(Color.appPurple.opacity(0.12))
-                            .cornerRadius(10)
-                    }
-                    .disabled({ if case .analyzing = scanPhase { return true } else { return false } }())
-                }
-            }
-        }
-        .padding(16)
-        .appCard()
+        PhotoScanCard(
+            image:      $selectedImage,
+            pickerItem: $pickerItem,
+            phase:      scanPhase,
+            doneLabel:  "填入完成",
+            onCamera:     { showCamera = true },
+            onReanalyze:  { Task { await analyze() } }
+        )
     }
 
     private var inputGrid: some View {
@@ -304,7 +217,7 @@ struct AddBodyIndexSheet: View {
 
         scanPhase = .analyzing
 
-        guard let imageData = compressedJPEG(image, maxBytes: 800_000) else {
+        guard let imageData = image.compressedJPEG(maxBytes: 800_000) else {
             scanPhase = .error("無法壓縮圖片")
             return
         }
@@ -324,19 +237,6 @@ struct AddBodyIndexSheet: View {
         } catch {
             scanPhase = .error(error.localizedDescription)
         }
-    }
-
-    // MARK: - Image Helpers
-
-    private func compressedJPEG(_ image: UIImage, maxBytes: Int) -> Data? {
-        var quality: CGFloat = 0.85
-        while quality >= 0.1 {
-            if let data = image.jpegData(compressionQuality: quality), data.count <= maxBytes {
-                return data
-            }
-            quality -= 0.15
-        }
-        return image.jpegData(compressionQuality: 0.1)
     }
 
     // MARK: - LLM Parsing
@@ -382,40 +282,5 @@ struct AddBodyIndexSheet: View {
 
     private func fmt(_ v: Double) -> String {
         v.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(v))" : String(format: "%.1f", v)
-    }
-}
-
-// MARK: - Camera Picker
-
-private struct CameraPicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    @Environment(\.dismiss) private var dismiss
-
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker        = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate   = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraPicker
-        init(_ parent: CameraPicker) { self.parent = parent }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            parent.image = info[.originalImage] as? UIImage
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
-        }
     }
 }
