@@ -3,6 +3,7 @@ import SwiftUI
 struct LLMSettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
+    @AppStorage("llmProvider")           private var provider:       LLMProvider = .geminiAPI
     @AppStorage("llmEndpoint")           private var endpoint:       String = ""
     @AppStorage("llmModelName")          private var modelName:      String = ""
     @AppStorage("llmEmbeddingModelName") private var embeddingModel: String = ""
@@ -11,6 +12,13 @@ struct LLMSettingsView: View {
     @State private var saved:      Bool      = false
     @State private var testState:  TestState = .idle
     @State private var embedState: TestState = .idle
+
+    @State private var availableModels: [GeminiModel] = []
+    @State private var modelsLoading:   Bool          = false
+    @State private var modelsError:     String?       = nil
+
+    private var chatModels: [GeminiModel] { availableModels.filter(\.supportsGenerateContent) }
+    private var embeddingModels: [GeminiModel] { availableModels.filter(\.supportsEmbedding) }
 
     private enum TestState {
         case idle
@@ -41,6 +49,13 @@ struct LLMSettingsView: View {
         .navigationBarHidden(true)
         .onAppear {
             apiKey = KeychainHelper.loadLLMKey() ?? ""
+            syncEndpoint(for: provider)
+            if provider.supportsModelListing && !apiKey.isEmpty && availableModels.isEmpty {
+                loadModels()
+            }
+        }
+        .onChange(of: provider) { _, newProvider in
+            syncEndpoint(for: newProvider)
         }
         .animation(.easeInOut(duration: 0.2), value: saved)
     }
@@ -51,37 +66,38 @@ struct LLMSettingsView: View {
 
     private var configCard: some View {
         VStack(spacing: 16) {
+            providerField
+
             secureInputField(
                 label: "API Key",
                 hint:  "sk-... 或對應格式的 API 金鑰",
                 value: $apiKey
             )
 
-            inputField(
-                label: "Base URL",
-                hint:  "https://api.openai.com/v1",
-                value: $endpoint
-            )
+            if !provider.hasFixedBaseURL {
+                inputField(
+                    label: "Base URL",
+                    hint:  "https://api.openai.com/v1",
+                    value: $endpoint
+                )
+            }
 
-            inputField(
-                label: "Model",
-                hint:  "gpt-4o / claude-sonnet-4-6 / ...",
-                value: $modelName
-            )
-
-            inputField(
-                label: "Embedding Model",
-                hint:  "gemini-embedding-2 / text-embedding-3-small / ...",
-                value: $embeddingModel
-            )
+            if provider.supportsModelListing {
+                modelListControls
+                modelPickerField(label: "Model", selection: $modelName, options: chatModels)
+                modelPickerField(label: "Embedding Model", selection: $embeddingModel, options: embeddingModels)
+            } else {
+                inputField(label: "Model", hint: provider.modelHint, value: $modelName)
+                inputField(label: "Embedding Model", hint: provider.embeddingModelHint, value: $embeddingModel)
+            }
 
             HStack(spacing: 12) {
                 Button {
                     apiKey         = ""
-                    endpoint       = ""
                     modelName      = ""
                     embeddingModel = ""
                     KeychainHelper.deleteLLMKey()
+                    syncEndpoint(for: provider)
                     flash()
                 } label: {
                     Text("清除")
@@ -114,6 +130,105 @@ struct LLMSettingsView: View {
     }
 
     // MARK: - Fields
+
+    private var providerField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Provider")
+                .font(.appLabel)
+                .foregroundColor(.appTextTert)
+            Menu {
+                ForEach(LLMProvider.allCases) { option in
+                    Button(option.displayName) { provider = option }
+                }
+            } label: {
+                HStack {
+                    Text(provider.displayName)
+                        .font(.system(size: 14))
+                        .foregroundColor(.appText)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextSub)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 48)
+                .background(Color.appBackground)
+                .cornerRadius(12)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder, lineWidth: 1))
+            }
+        }
+    }
+
+    // Refresh button + status for the fetched model list.
+    private var modelListControls: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Button {
+                    loadModels()
+                } label: {
+                    HStack(spacing: 6) {
+                        if modelsLoading {
+                            ProgressView().tint(.appTextSub)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        Text(modelsLoading ? "載入中…" : "重新整理模型清單")
+                    }
+                    .font(.appCaption)
+                    .foregroundColor(.appTextSub)
+                }
+                .disabled(modelsLoading)
+
+                Spacer()
+
+                if !availableModels.isEmpty {
+                    Text("\(availableModels.count) 個模型")
+                        .font(.appMicro)
+                        .foregroundColor(.appTextMuted)
+                }
+            }
+
+            if let modelsError {
+                Text(modelsError)
+                    .font(.appMicro)
+                    .foregroundColor(.appRed.opacity(0.8))
+            }
+        }
+    }
+
+    // A dropdown populated from the fetched model list.
+    private func modelPickerField(label: String, selection: Binding<String>, options: [GeminiModel]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.appLabel)
+                .foregroundColor(.appTextTert)
+            Menu {
+                if options.isEmpty {
+                    Text("尚無模型，請先重新整理")
+                } else {
+                    ForEach(options) { model in
+                        Button(model.id) { selection.wrappedValue = model.id }
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(selection.wrappedValue.isEmpty ? "選擇模型" : selection.wrappedValue)
+                        .font(.system(size: 14))
+                        .foregroundColor(selection.wrappedValue.isEmpty ? .appTextMuted : .appText)
+                        .lineLimit(1)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextSub)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 48)
+                .background(Color.appBackground)
+                .cornerRadius(12)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder, lineWidth: 1))
+            }
+        }
+    }
 
     private func inputField(label: String, hint: String, value: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -278,6 +393,36 @@ struct LLMSettingsView: View {
     private func flash() {
         saved = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { saved = false }
+    }
+
+    // For providers with a fixed endpoint, pin the stored base URL so the rest of
+    // the app (LLMClient.fromStoredSettings) keeps working off `llmEndpoint`.
+    private func syncEndpoint(for provider: LLMProvider) {
+        if provider.hasFixedBaseURL {
+            endpoint = provider.chatBaseURL
+        }
+    }
+
+    // Fetches the provider's model list using the key currently in the form (so it
+    // works before saving). Splits into chat / embedding via supported methods.
+    private func loadModels() {
+        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else {
+            modelsError = "請先填入 API Key"
+            return
+        }
+        let client = GeminiModelListClient(config: GeminiModelListConfig(apiKey: key))
+        modelsLoading = true
+        modelsError   = nil
+        Task { @MainActor in
+            do {
+                availableModels = try await client.listAll()
+                if availableModels.isEmpty { modelsError = "沒有可用的模型" }
+            } catch {
+                modelsError = error.localizedDescription
+            }
+            modelsLoading = false
+        }
     }
 
     private func runTest() {
