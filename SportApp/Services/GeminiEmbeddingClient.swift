@@ -45,12 +45,12 @@ enum GeminiEmbeddingError: LocalizedError {
 // MARK: - Client
 
 // Talks to the native Gemini embedding API (generativelanguage `embedContent` /
-// `batchEmbedContents`) — NOT the OpenAI-compatible surface used by LLMClient.
+// `batchEmbedContents`) — NOT the OpenAI-compatible surface used by GeminiChatClient.
 // Auth is the simple `x-goog-api-key` header. Always batches (a single item is a
 // batch of one), which matches the official SDK and is more quota-efficient.
 // Vectors come back unnormalized and possibly Matryoshka-truncated, so every
 // vector is L2-normalized here before returning (cosine == dot product after).
-final class GeminiEmbeddingClient {
+final class GeminiEmbeddingClient: EmbeddingService {
     let config: GeminiEmbeddingConfig
 
     init(config: GeminiEmbeddingConfig) {

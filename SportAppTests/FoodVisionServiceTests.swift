@@ -73,10 +73,10 @@ struct FoodVisionServiceTests {
     }
 
     private func makeService() -> FoodVisionService {
-        FoodVisionService(client: LLMClient(config: LLMConfig(
+        FoodVisionService(chat: GeminiChatClient(config: GeminiChatConfig(
             apiKey:  Env.apiKey,
-            baseURL: Env.baseURL,
-            model:   Env.model
+            model:   Env.model,
+            baseURL: Env.baseURL
         )))
     }
 

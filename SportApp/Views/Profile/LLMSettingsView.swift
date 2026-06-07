@@ -4,7 +4,6 @@ struct LLMSettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("llmProvider")           private var provider:       LLMProvider = .geminiAPI
-    @AppStorage("llmEndpoint")           private var endpoint:       String = ""
     @AppStorage("llmModelName")          private var modelName:      String = ""
     @AppStorage("llmEmbeddingModelName") private var embeddingModel: String = ""
 
@@ -49,13 +48,9 @@ struct LLMSettingsView: View {
         .navigationBarHidden(true)
         .onAppear {
             apiKey = KeychainHelper.loadLLMKey() ?? ""
-            syncEndpoint(for: provider)
             if provider.supportsModelListing && !apiKey.isEmpty && availableModels.isEmpty {
                 loadModels()
             }
-        }
-        .onChange(of: provider) { _, newProvider in
-            syncEndpoint(for: newProvider)
         }
         .animation(.easeInOut(duration: 0.2), value: saved)
     }
@@ -74,14 +69,6 @@ struct LLMSettingsView: View {
                 value: $apiKey
             )
 
-            if !provider.hasFixedBaseURL {
-                inputField(
-                    label: "Base URL",
-                    hint:  "https://api.openai.com/v1",
-                    value: $endpoint
-                )
-            }
-
             if provider.supportsModelListing {
                 modelListControls
                 modelPickerField(label: "Model", selection: $modelName, options: chatModels)
@@ -97,7 +84,6 @@ struct LLMSettingsView: View {
                     modelName      = ""
                     embeddingModel = ""
                     KeychainHelper.deleteLLMKey()
-                    syncEndpoint(for: provider)
                     flash()
                 } label: {
                     Text("清除")
@@ -381,11 +367,11 @@ struct LLMSettingsView: View {
     }
 
     private var canTest: Bool {
-        !apiKey.isEmpty && !endpoint.isEmpty && !modelName.isEmpty
+        !apiKey.isEmpty && !modelName.isEmpty
     }
 
     private var canTestEmbedding: Bool {
-        !apiKey.isEmpty && !endpoint.isEmpty && !embeddingModel.isEmpty
+        !apiKey.isEmpty && !embeddingModel.isEmpty
     }
 
     // MARK: - Helpers
@@ -393,14 +379,6 @@ struct LLMSettingsView: View {
     private func flash() {
         saved = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { saved = false }
-    }
-
-    // For providers with a fixed endpoint, pin the stored base URL so the rest of
-    // the app (LLMClient.fromStoredSettings) keeps working off `llmEndpoint`.
-    private func syncEndpoint(for provider: LLMProvider) {
-        if provider.hasFixedBaseURL {
-            endpoint = provider.chatBaseURL
-        }
     }
 
     // Fetches the provider's model list using the key currently in the form (so it
@@ -426,10 +404,9 @@ struct LLMSettingsView: View {
     }
 
     private func runTest() {
-        let client = LLMClient(config: LLMConfig(
-            apiKey:  apiKey.trimmingCharacters(in: .whitespacesAndNewlines),
-            baseURL: endpoint.trimmingCharacters(in: .whitespacesAndNewlines),
-            model:   modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let client = GeminiChatClient(config: GeminiChatConfig(
+            apiKey: apiKey.trimmingCharacters(in: .whitespacesAndNewlines),
+            model:  modelName.trimmingCharacters(in: .whitespacesAndNewlines)
         ))
         testState = .loading
         Task { @MainActor in

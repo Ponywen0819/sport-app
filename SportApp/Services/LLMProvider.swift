@@ -14,21 +14,6 @@ enum LLMProvider: String, CaseIterable, Identifiable {
         }
     }
 
-    // OpenAI-compatible chat/completions base URL (consumed by LLMClient).
-    var chatBaseURL: String {
-        switch self {
-        case .geminiAPI: return "https://generativelanguage.googleapis.com/v1beta/openai"
-        }
-    }
-
-    // When true the base URL is fixed by the provider, so the settings UI hides
-    // the manual Base URL field and pins the stored endpoint to `chatBaseURL`.
-    var hasFixedBaseURL: Bool {
-        switch self {
-        case .geminiAPI: return true
-        }
-    }
-
     // When true the settings UI can fetch a model list (via GeminiModelListClient)
     // and offer pickers instead of free-text model fields.
     var supportsModelListing: Bool {
@@ -46,6 +31,37 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var embeddingModelHint: String {
         switch self {
         case .geminiAPI: return "gemini-embedding-2-preview / ..."
+        }
+    }
+}
+
+// MARK: - Service factory
+
+// The provider acts as an adapter: callers ask the current provider for the
+// configured chat / embedding / model-list service instead of constructing a
+// specific client. Adding a provider means adding its cases here — call sites
+// don't change.
+extension LLMProvider {
+    // The provider the user has selected (defaults to Gemini API).
+    static var current: LLMProvider {
+        LLMProvider(rawValue: UserDefaults.standard.string(forKey: "llmProvider") ?? "") ?? .geminiAPI
+    }
+
+    func makeChatService() -> ChatService? {
+        switch self {
+        case .geminiAPI: return GeminiChatClient.fromStoredSettings()
+        }
+    }
+
+    func makeEmbeddingService() -> EmbeddingService? {
+        switch self {
+        case .geminiAPI: return GeminiEmbeddingClient.fromStoredSettings()
+        }
+    }
+
+    func makeModelListService() -> ModelListService? {
+        switch self {
+        case .geminiAPI: return GeminiModelListClient.fromStoredSettings()
         }
     }
 }

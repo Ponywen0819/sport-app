@@ -210,8 +210,8 @@ struct AddBodyIndexSheet: View {
     @MainActor
     private func analyze() async {
         guard let image = selectedImage else { return }
-        guard let client = LLMClient.fromStoredSettings() else {
-            scanPhase = .error("請先在「LLM API 設定」中填入 API Key、Endpoint 與模型名稱")
+        guard let client = LLMProvider.current.makeChatService() else {
+            scanPhase = .error("請先在「LLM API 設定」中填入 API Key 與模型名稱")
             return
         }
 
@@ -228,6 +228,7 @@ struct AddBodyIndexSheet: View {
             let completion = try await client.completeWithImage(
                 prompt:    prompt,
                 imageData: imageData,
+                mimeType:  "image/jpeg",
                 schema:    Self.bodyScanSchema,
                 maxTokens: 256
             )

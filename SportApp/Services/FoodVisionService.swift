@@ -85,9 +85,9 @@ enum FoodVisionError: LocalizedError {
 // deal with domain results. Designed to grow (more recognizers, alternate
 // prompts, etc.).
 final class FoodVisionService {
-    private let client: LLMClient
-    private let embedder: GeminiEmbeddingClient?   // image embedding for RAG; nil = no RAG
-    private let memory: FoodMemoryStore?           // past confirmed foods; nil = no RAG
+    private let chat: ChatService
+    private let embedder: EmbeddingService?         // image embedding for RAG; nil = no RAG
+    private let memory: FoodMemoryStore?            // past confirmed foods; nil = no RAG
     private let maxImageBytes: Int
 
     // RAG retrieval knobs.
@@ -95,25 +95,25 @@ final class FoodVisionService {
     private let anchorMinScore: Float = 0.6
 
     init(
-        client:        LLMClient,
-        embedder:      GeminiEmbeddingClient? = nil,
-        memory:        FoodMemoryStore?       = nil,
-        maxImageBytes: Int                    = 800_000
+        chat:          ChatService,
+        embedder:      EmbeddingService? = nil,
+        memory:        FoodMemoryStore?  = nil,
+        maxImageBytes: Int               = 800_000
     ) {
-        self.client        = client
+        self.chat          = chat
         self.embedder      = embedder
         self.memory        = memory
         self.maxImageBytes = maxImageBytes
     }
 
-    // Builds a service from stored settings, or nil if the LLM is unconfigured.
-    // Pass a memory store to enable RAG (retrieval + write-back); the embedder is
-    // taken from the stored embedding settings and may be nil (→ RAG disabled).
+    // Builds a service from the current provider, or nil if chat is unconfigured.
+    // Pass a memory store to enable RAG (retrieval + write-back); the embedder
+    // comes from the provider too and may be nil (→ RAG disabled).
     static func fromStoredSettings(memory: FoodMemoryStore? = nil) -> FoodVisionService? {
-        guard let client = LLMClient.fromStoredSettings() else { return nil }
+        guard let chat = LLMProvider.current.makeChatService() else { return nil }
         return FoodVisionService(
-            client:   client,
-            embedder: GeminiEmbeddingClient.fromStoredSettings(),
+            chat:     chat,
+            embedder: LLMProvider.current.makeEmbeddingService(),
             memory:   memory
         )
     }
@@ -169,7 +169,7 @@ final class FoodVisionService {
     private func retrieveCandidates(for image: UIImage) async -> [FoodAnchor] {
         guard let embedder, let memory else { return [] }
         do {
-            let vector = try await embedder.embed(image: image)
+            let vector = try await embedder.embed(image: image, maxBytes: maxImageBytes)
             return memory.similarFoods(to: vector, topK: anchorTopK, minScore: anchorMinScore)
         } catch {
             return []
@@ -183,7 +183,7 @@ final class FoodVisionService {
         guard let memory, !foods.isEmpty else { return }
         var vector: [Float]? = nil
         var imagePath: String? = nil
-        if let embedder, let v = try? await embedder.embed(image: image) {
+        if let embedder, let v = try? await embedder.embed(image: image, maxBytes: maxImageBytes) {
             vector    = v
             imagePath = FoodImageStore.save(image)
         }
@@ -290,9 +290,10 @@ final class FoodVisionService {
         guard let imageData = image.compressedJPEG(maxBytes: maxImageBytes) else {
             throw FoodVisionError.imageCompressionFailed
         }
-        let completion = try await client.completeWithImage(
+        let completion = try await chat.completeWithImage(
             prompt:    prompt,
             imageData: imageData,
+            mimeType:  "image/jpeg",
             schema:    schema,
             maxTokens: maxTokens
         )

@@ -64,17 +64,29 @@ enum GeminiModelListError: LocalizedError {
 
 // Lists the models available to a Gemini API key via the native
 // generativelanguage `GET /models` endpoint (NOT the OpenAI-compatible surface
-// used by LLMClient). Auth is the simple `x-goog-api-key` header.
+// used by GeminiChatClient). Auth is the simple `x-goog-api-key` header.
 //
 // The endpoint pages at 50 models by default and returns a `nextPageToken` while
 // more remain; `listAll()` follows that token transparently so callers just get
 // the full list — mirroring how the official SDK's `client.models.list()` Pager
 // auto-iterates. `get(model:)` fetches a single model's full spec.
-final class GeminiModelListClient {
+final class GeminiModelListClient: ModelListService {
     let config: GeminiModelListConfig
 
     init(config: GeminiModelListConfig) {
         self.config = config
+    }
+
+    // ModelListService — provider-neutral listing for the settings pickers.
+    func availableModels() async throws -> [LLMModelInfo] {
+        try await listAll().map {
+            LLMModelInfo(
+                id:                $0.id,
+                displayName:       $0.displayName,
+                supportsChat:      $0.supportsGenerateContent,
+                supportsEmbedding: $0.supportsEmbedding
+            )
+        }
     }
 
     // Builds a client from the stored API key, or nil if none is set.

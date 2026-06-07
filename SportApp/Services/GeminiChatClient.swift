@@ -2,10 +2,13 @@ import Foundation
 
 // MARK: - Config
 
-struct LLMConfig {
+// Chat config for the Gemini API's OpenAI-compatible surface. The base URL is
+// owned here (not by the provider) since this client is Gemini-specific; it
+// defaults to the Gemini endpoint and can be overridden (e.g. a proxy).
+struct GeminiChatConfig {
     var apiKey:  String
-    var baseURL: String
     var model:   String
+    var baseURL: String = "https://generativelanguage.googleapis.com/v1beta/openai"
 }
 
 // MARK: - Message
@@ -79,10 +82,10 @@ enum LLMError: LocalizedError {
 
 // MARK: - Client
 
-final class LLMClient {
-    let config: LLMConfig
+final class GeminiChatClient: ChatService {
+    let config: GeminiChatConfig
 
-    init(config: LLMConfig) {
+    init(config: GeminiChatConfig) {
         self.config = config
     }
 
@@ -155,12 +158,11 @@ final class LLMClient {
 
     // MARK: Factory
 
-    static func fromStoredSettings() -> LLMClient? {
+    static func fromStoredSettings() -> GeminiChatClient? {
         guard let key = KeychainHelper.loadLLMKey(), !key.isEmpty else { return nil }
-        let base  = UserDefaults.standard.string(forKey: "llmEndpoint")  ?? ""
         let model = UserDefaults.standard.string(forKey: "llmModelName") ?? ""
-        guard !base.isEmpty, !model.isEmpty else { return nil }
-        return LLMClient(config: LLMConfig(apiKey: key, baseURL: base, model: model))
+        guard !model.isEmpty else { return nil }
+        return GeminiChatClient(config: GeminiChatConfig(apiKey: key, model: model))
     }
 
     // MARK: - Private
