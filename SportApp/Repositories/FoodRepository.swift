@@ -22,6 +22,14 @@ final class FoodRepository {
         return all.filter { $0.name.lowercased().contains(lower) }
     }
 
+    // Exact (case-insensitive, trimmed) name match — used to dedupe before
+    // auto-inserting a recognized food.
+    func food(named name: String) throws -> Food? {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        return try allFoods().first { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }
+    }
+
     func recentFoods(limit: Int = 8) throws -> [Food] {
         var descriptor = FetchDescriptor<Food>(
             predicate: #Predicate { $0.lastUsed != nil },

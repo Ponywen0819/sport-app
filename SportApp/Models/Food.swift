@@ -10,14 +10,17 @@ final class Food {
     var fat: Double           // g per weightBasis grams
     var carbs: Double         // g per weightBasis grams
     var lastUsed: Date?
+    var imagePath: String?    // link to a stored photo (relative path under Documents)
 
     init(name: String, weightBasis: Double = 100,
-         calories: Double, protein: Double, fat: Double, carbs: Double) {
+         calories: Double, protein: Double, fat: Double, carbs: Double,
+         imagePath: String? = nil) {
         self.name = name
         self.weightBasis = weightBasis
         self.calories = calories
         self.protein = protein
         self.fat = fat
         self.carbs = carbs
+        self.imagePath = imagePath
     }
 }
