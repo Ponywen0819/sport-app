@@ -3,9 +3,10 @@ import Foundation
 // MARK: - Config
 
 struct LLMConfig {
-    var apiKey:  String
-    var baseURL: String
-    var model:   String
+    var apiKey:         String
+    var baseURL:        String
+    var model:          String
+    var embeddingModel: String = ""
 }
 
 // MARK: - Message
@@ -118,6 +119,29 @@ final class LLMClient {
         return completion.content
     }
 
+    // MARK: Embeddings
+
+    /// Calls the OpenAI-compatible `/embeddings` endpoint and returns the vector
+    /// for a single input string.
+    func embed(_ text: String) async throws -> [Double] {
+        let url = try resolveURL(path: "embeddings")
+
+        let body: [String: Any] = [
+            "model": config.embeddingModel,
+            "input": text
+        ]
+
+        var req = URLRequest(url: url, timeoutInterval: 30)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json",         forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+        try validate(response: response, data: data)
+        return try decodeEmbedding(data: data)
+    }
+
     func completeWithImage(
         prompt:    String,
         imageData: Data,
@@ -165,10 +189,10 @@ final class LLMClient {
 
     // MARK: - Private
 
-    private func resolveURL() throws -> URL {
+    private func resolveURL(path: String = "chat/completions") throws -> URL {
         var base = config.baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         if base.hasSuffix("/") { base.removeLast() }
-        let urlStr = "\(base)/chat/completions"
+        let urlStr = "\(base)/\(path)"
         guard let url = URL(string: urlStr) else { throw LLMError.invalidURL(urlStr) }
         return url
     }
@@ -221,5 +245,22 @@ final class LLMClient {
             )
         }
         return LLMCompletion(content: first.message.content, model: raw.model, usage: usage)
+    }
+
+    private func decodeEmbedding(data: Data) throws -> [Double] {
+        struct Raw: Decodable {
+            struct Item: Decodable { let embedding: [Double] }
+            let data: [Item]
+        }
+
+        let raw: Raw
+        do {
+            raw = try JSONDecoder().decode(Raw.self, from: data)
+        } catch {
+            throw LLMError.decodingFailed(error.localizedDescription)
+        }
+
+        guard let first = raw.data.first else { throw LLMError.emptyChoices }
+        return first.embedding
     }
 }
