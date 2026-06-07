@@ -9,7 +9,6 @@ import PhotosUI
 struct ScanMealView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(MealRepository.self) private var mealRepo
-    @Environment(FoodRepository.self) private var foodRepo
     @Environment(FoodMemoryRepository.self) private var memoryRepo
 
     let date: Date
@@ -202,11 +201,9 @@ struct ScanMealView: View {
             try? mealRepo.add(record)
         }
 
-        syncFoodDatabase()
-
-        // Best-effort RAG write-back: remember these confirmed foods (with the
-        // photo embedding) so future scans of similar meals are more accurate.
-        // Fire-and-forget so saving stays snappy.
+        // Best-effort write-back: upsert each confirmed food into the library
+        // (propagating edits) and append a photo sighting for RAG. Fire-and-forget
+        // so saving stays snappy.
         if let image = selectedImage,
            let service = FoodVisionService.fromStoredSettings(memory: memoryRepo) {
             let confirmed = items.map {
@@ -221,42 +218,6 @@ struct ScanMealView: View {
         }
 
         dismiss()
-    }
-
-    // Adds any recognized item not already in the food library, normalized to
-    // per-100g, linked to the meal photo. Existing foods are just marked used so
-    // they surface in "recent". The photo is saved at most once and shared.
-    private func syncFoodDatabase() {
-        var savedImagePath: String? = nil
-        var didSaveImage = false
-
-        for item in items {
-            let name = item.name.trimmingCharacters(in: .whitespaces)
-            guard !name.isEmpty else { continue }
-
-            if let existing = try? foodRepo.food(named: name) {
-                foodRepo.markUsed(existing)
-                continue
-            }
-
-            if !didSaveImage {
-                savedImagePath = selectedImage.flatMap { FoodImageStore.save($0) }
-                didSaveImage = true
-            }
-
-            let factor = item.intake > 0 ? 100.0 / item.intake : 0
-            let food = Food(
-                name:        name,
-                weightBasis: 100,
-                calories:    item.calories * factor,
-                protein:     item.protein  * factor,
-                fat:         item.fat      * factor,
-                carbs:       item.carbs    * factor,
-                imagePath:   savedImagePath
-            )
-            try? foodRepo.add(food)
-            foodRepo.markUsed(food)
-        }
     }
 
     // MARK: - Scan

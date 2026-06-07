@@ -1,42 +1,23 @@
 import SwiftData
 import Foundation
 
-// A past, user-confirmed food used as a RAG anchor for future nutrition
-// prediction. Macros are stored per-100g so they're portion-independent (an
-// anchor can calibrate a different portion). `embedding` is the L2-normalized
-// image embedding of the photo the food came from — whole-photo for now, so all
-// foods from one photo share the same vector.
+// One photo "sighting" of a food — the RAG index entry. Holds only what's unique
+// to the observation: the photo, its embedding, and the observed portion. The
+// nutrition lives on the parent `Food` (single source of truth), so it's always
+// derivable and never inconsistent. A `Food` has many of these.
 @Model
 final class FoodMemory {
-    var name: String
-    var grams: Double
-    var per100Calories: Double
-    var per100Protein: Double
-    var per100Fat: Double
-    var per100Carbs: Double
+    var imagePath: String?
     var embedding: [Float]
-    var userEdited: Bool      // the user changed the AI's values → stronger anchor
+    var grams: Double
     var createdAt: Date
+    var food: Food?
 
-    init(
-        name: String,
-        grams: Double,
-        per100Calories: Double,
-        per100Protein: Double,
-        per100Fat: Double,
-        per100Carbs: Double,
-        embedding: [Float],
-        userEdited: Bool,
-        createdAt: Date
-    ) {
-        self.name           = name
-        self.grams          = grams
-        self.per100Calories = per100Calories
-        self.per100Protein  = per100Protein
-        self.per100Fat      = per100Fat
-        self.per100Carbs    = per100Carbs
-        self.embedding      = embedding
-        self.userEdited     = userEdited
-        self.createdAt      = createdAt
+    init(imagePath: String?, embedding: [Float], grams: Double, createdAt: Date, food: Food? = nil) {
+        self.imagePath = imagePath
+        self.embedding = embedding
+        self.grams     = grams
+        self.createdAt = createdAt
+        self.food      = food
     }
 }

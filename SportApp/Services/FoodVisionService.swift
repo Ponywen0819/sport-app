@@ -34,26 +34,28 @@ struct ConfirmedFood {
     let userEdited: Bool
 }
 
-// A retrieved past food (per-100g) used as few-shot context when predicting
-// nutrition. `score` is cosine similarity to the current photo.
+// A retrieved candidate food (per-100g, from the parent Food) used both to
+// canonicalize the entity name and as few-shot context. `score` is cosine
+// similarity of the current photo to a past sighting of this food.
 struct FoodAnchor {
     let name:           String
     let per100Calories: Double
     let per100Protein:  Double
     let per100Fat:      Double
     let per100Carbs:    Double
-    let userEdited:     Bool
     let score:          Float
 }
 
-// The memory the service reads anchors from / writes confirmed foods to. Backed
+// The store the service reads candidates from / writes confirmed foods to. Backed
 // by FoodMemoryRepository; abstracted so the service stays free of SwiftData.
+// `record` upserts the canonical Food (propagating user edits) and appends a
+// photo sighting (FoodMemory) when an embedding is available.
 protocol FoodMemoryStore: AnyObject {
     func similarFoods(to embedding: [Float], topK: Int, minScore: Float) -> [FoodAnchor]
-    func remember(
+    func record(
         name: String, grams: Double,
         calories: Double, protein: Double, fat: Double, carbs: Double,
-        embedding: [Float], userEdited: Bool
+        embedding: [Float]?, imagePath: String?, userEdited: Bool
     )
 }
 
@@ -118,23 +120,53 @@ final class FoodVisionService {
 
     // MARK: Recognize (two-stage)
 
-    // Full pipeline: detect the food entities in the photo, retrieve similar past
-    // foods (RAG), then predict nutrition using them as anchors. Returns one
-    // RecognizedFood per food (empty if none). The create-food flow uses the
-    // first; the meal flow uses all of them.
+    // Full pipeline:
+    //   1. retrieve candidates by photo similarity (RAG, before recognition)
+    //   2. detect entities, primed with candidate names so naming is consistent
+    //   3. reconcile: an entity whose (canonicalized) name matches a candidate
+    //      reuses that food's stored nutrition; the rest go to prediction
+    //   4. predict nutrition for the unmatched, using candidates as anchors
+    // Returns one RecognizedFood per food (empty if none), in entity order.
     func recognizeFoods(_ image: UIImage) async throws -> [RecognizedFood] {
-        let entities = try await recognizeEntities(image)
+        let candidates = await retrieveCandidates(for: image)
+        let entities   = try await recognizeEntities(image, candidates: candidates)
         guard !entities.isEmpty else { return [] }
-        let anchors = await retrieveAnchors(for: image)
-        return try await predictNutrition(for: entities, in: image, anchors: anchors)
+
+        let candidateByName = Dictionary(
+            candidates.map { ($0.name, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let unmatched = entities.filter { candidateByName[$0.name] == nil }
+
+        let predicted = unmatched.isEmpty
+            ? []
+            : try await predictNutrition(for: unmatched, in: image, anchors: candidates)
+        let predictedByName = Dictionary(
+            predicted.map { ($0.name, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return entities.map { entity in
+            if let c = candidateByName[entity.name] {
+                let f = entity.grams / 100.0
+                return RecognizedFood(
+                    name: entity.name, grams: entity.grams,
+                    calories: c.per100Calories * f, protein: c.per100Protein * f,
+                    fat: c.per100Fat * f, carbs: c.per100Carbs * f
+                )
+            }
+            return predictedByName[entity.name]
+                ?? RecognizedFood(name: entity.name, grams: entity.grams,
+                                  calories: 0, protein: 0, fat: 0, carbs: 0)
+        }
     }
 
     // MARK: RAG
 
-    // Embeds the photo and pulls similar past foods. Best-effort: any failure
-    // (no embedder/memory, network error) yields no anchors rather than aborting
-    // the whole recognition.
-    private func retrieveAnchors(for image: UIImage) async -> [FoodAnchor] {
+    // Embeds the photo and pulls similar past foods (canonical name + per-100g).
+    // Best-effort: any failure (no embedder/memory, network error) yields no
+    // candidates rather than aborting recognition.
+    private func retrieveCandidates(for image: UIImage) async -> [FoodAnchor] {
         guard let embedder, let memory else { return [] }
         do {
             let vector = try await embedder.embed(image: image)
@@ -144,23 +176,32 @@ final class FoodVisionService {
         }
     }
 
-    // Stores the user-confirmed foods of a scan as future anchors. All foods from
-    // one photo share its embedding. Best-effort; silently no-ops without RAG.
+    // Stores the user-confirmed foods of a scan: upserts each canonical Food
+    // (propagating edits) and appends a photo sighting. Best-effort. Foods are
+    // still upserted even if embedding fails (only the sighting is skipped).
     func remember(_ foods: [ConfirmedFood], from image: UIImage) async {
-        guard let embedder, let memory, !foods.isEmpty else { return }
-        guard let vector = try? await embedder.embed(image: image) else { return }
+        guard let memory, !foods.isEmpty else { return }
+        var vector: [Float]? = nil
+        var imagePath: String? = nil
+        if let embedder, let v = try? await embedder.embed(image: image) {
+            vector    = v
+            imagePath = FoodImageStore.save(image)
+        }
         for food in foods {
-            memory.remember(
+            memory.record(
                 name: food.name, grams: food.grams,
                 calories: food.calories, protein: food.protein, fat: food.fat, carbs: food.carbs,
-                embedding: vector, userEdited: food.userEdited
+                embedding: vector, imagePath: imagePath, userEdited: food.userEdited
             )
         }
     }
 
     // Stage 1 — vision, focused on detection: identify each food and estimate its
-    // edible weight, with no nutrition yet.
-    func recognizeEntities(_ image: UIImage) async throws -> [FoodEntity] {
+    // edible weight, with no nutrition yet. When candidates are supplied (from
+    // RAG), the model is told to reuse an existing food's exact name if it's the
+    // same dish, so naming stays consistent across scans (photo, not name, is the
+    // identity).
+    func recognizeEntities(_ image: UIImage, candidates: [FoodAnchor] = []) async throws -> [FoodEntity] {
         let prompt = """
         你是專業的食物辨識專家。使用者會給你一張食物照片。
 
@@ -173,7 +214,7 @@ final class FoodVisionService {
           例：鮭魚炒飯算一項，不要拆成「炒飯」「炒蛋」「鮭魚」。
         - 只有當盤中有「多道可明顯區分的餐點」時才分成多項。
           例：便當裡的白飯、雞排、燙青菜各自為一項。
-
+        \(candidateSection(candidates))
         其他注意：
         - name 一律使用「繁體中文」，嚴禁簡體字、英文或其他語言；外來語請用台灣慣用的繁體中文譯名。
         - 份量請以「煮熟後可食部分」為準，寧可給估計值也不要留空。
@@ -185,6 +226,19 @@ final class FoodVisionService {
             image: image, prompt: prompt, schema: Self.entitySchema, maxTokens: 1024
         )
         return scan.items.map { FoodEntity(name: $0.name, grams: $0.grams) }
+    }
+
+    // Candidate names from RAG, injected so the model canonicalizes naming.
+    private func candidateSection(_ candidates: [FoodAnchor]) -> String {
+        guard !candidates.isEmpty else { return "" }
+        let names = candidates.map { "- \($0.name)" }.joined(separator: "\n")
+        return """
+
+        命名對齊（重要）：
+        若照片中的食物與下列「已知食物」是同一道，請務必沿用其『完全相同』的名稱（一字不差）；只有不屬於這些的才自行命名。
+        已知食物：
+        \(names)
+        """
     }
 
     // Stage 2 — vision, focused on nutrition: looks at the same photo again, but
@@ -254,8 +308,7 @@ final class FoodVisionService {
     private func anchorSection(_ anchors: [FoodAnchor]) -> String {
         guard !anchors.isEmpty else { return "" }
         let lines = anchors.map { a in
-            let tag = a.userEdited ? "（使用者已校正）" : ""
-            return "- \(a.name)\(tag)：每 100g 約 "
+            "- \(a.name)：每 100g 約 "
                 + "\(formatGrams(a.per100Calories)) kcal、"
                 + "P\(formatGrams(a.per100Protein))、"
                 + "F\(formatGrams(a.per100Fat))、"
@@ -263,7 +316,7 @@ final class FoodVisionService {
         }.joined(separator: "\n")
         return """
 
-        以下是使用者過去確認過、與這張照片相似的食物營養（每 100g，僅供校準參考，請優先參考標示「使用者已校正」者）：
+        以下是使用者過去確認過、與這張照片相似的食物營養（每 100g，僅供校準參考）：
         \(lines)
 
         """
